@@ -22,7 +22,8 @@ RESwitch=1                                  # Switch for running the model with 
 
 ## Working Directory
 #setwd("~/Documents/Work/Redfish/ICES/AFWG2016/mentella/SCA_mentella_TMB_2016/CurrentVersion") #<- to be adjusted to individual machines
-#new change
+
+
 #####################
 ## DATA PREP       ##
 #####################
