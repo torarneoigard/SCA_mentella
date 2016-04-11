@@ -18,12 +18,13 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(nAges);        // number of age in the population model
   DATA_INTEGER(nSurveys);     // number of surveys
   DATA_VECTOR(SurveyTime);    // timing of the surveys (0 = beginning of the year to 1 = end of the year)
+  DATA_INTEGER(REswitch);     // 0 fixed effect, 1 random effect
   // end of reading data
 
   // *** parameters declaration
   // dimensions and initial values of parameters are set in R
   PARAMETER_VECTOR(logNY1);
-  //PARAMETER_VECTOR(logNA1);
+  PARAMETER_VECTOR(logNA1);
   PARAMETER_VECTOR(DemlogFY);
   PARAMETER_VECTOR(PellogFY);
   PARAMETER(pDema50);
@@ -66,7 +67,8 @@ Type objective_function<Type>::operator() ()
   Type a0Russian=Type(2.0)+(exp(pa0Russian)/(Type(1.0)+exp(pa0Russian)))*Type(9.0); // bounded between 2 and 11
   //Type alogNY1=Type(2)/(Type(1) + exp(-Type(2)*palogNY1)) - Type(1); // bounded between -1 and 1
   Type alogNA1=Type(2)/(Type(1) + exp(-Type(2)*palogNA1)) - Type(1); // bounded between -1 and 1
-
+  
+  
   Rcout << "Dema50: " << Dema50 << "\n";
   Rcout << "Pela50: " << Pela50 << "\n";
   Rcout << "a0Winter: " << a0Winter << "\n";
@@ -84,16 +86,17 @@ Type objective_function<Type>::operator() ()
   //  logNY1(i) = alogNY1*logNY1(i-1)+SigmalogNY1*ulogNY1(i-1);
     //logNY1(i-1)=tmplogNY1(i);
   //   }
-     
-  Type SigmalogNA1 = exp(logSigmalogNA1);
-  vector<Type> tmplogNA1(nYears);
-  vector<Type> logNA1(nYears-1);
-  tmplogNA1(0)=logNY1(0);
-  for (int i=1; i<(nYears); i++){
-    tmplogNA1(i) = alogNA1*tmplogNA1(i-1)+SigmalogNA1*ulogNA1(i-1);
-    logNA1(i-1)=tmplogNA1(i);
-     }
-     
+  
+ //if(REswitch > 0){   
+    Type SigmalogNA1 = exp(logSigmalogNA1);
+    vector<Type> tmplogNA1(nYears);
+    vector<Type> logNA1re(nYears-1);
+    tmplogNA1(0)=logNY1(0);
+    for (int i=1; i<(nYears); i++){
+      tmplogNA1(i) = alogNA1*tmplogNA1(i-1)+SigmalogNA1*ulogNA1(i-1);
+      logNA1re(i-1)=tmplogNA1(i);
+    }
+ //} 
   // recoding catch at age data
   vector <int> CatchYear(CatchNrow);
   vector <int> CatchAge(CatchNrow);
@@ -248,8 +251,15 @@ Type objective_function<Type>::operator() ()
     }
  
   for(int y=1; y<nYears; ++y){  // loop on years (start on second year)
-    logN(y,0)=logNA1(y-1);  	            // fill in first line of logN with logNA1
-    logTriN(y,0)=logNA1(y-1);
+    if(REswitch < 1){
+      logN(y,0)=logNA1(y-1);// fill in first line of logN with logNA1
+      logTriN(y,0)=logNA1(y-1);
+    }
+    if(REswitch > 0){
+      logN(y,0)=logNA1re(y-1);// fill in first line of logN with logNA1
+      logTriN(y,0)=logNA1re(y-1);
+    }
+    
     for(int a=1; a<(nAges-1); ++a){    // loop on ages (start at second age column and end at one before last)
       logN(y,a)=logN(y-1,a-1)-F(y-1,a-1)-M2;// fill in logN for age a and year y
       logTriN(y,a) = logN(y,a);
@@ -356,11 +366,15 @@ Type objective_function<Type>::operator() ()
     nll += -dnorm(ulogNY1(i),Type(0),Type(1),true);
   }
 */
+
  //Likelihood contribution for the RE logNA1
-  for(int i=0;i<(nYears-1);i++)
-  {
-    nll += -dnorm(ulogNA1(i),Type(0),Type(1),true);
-  }
+// if(REswitch > 0){
+   for(int i=0;i<(nYears-1);i++)
+   {
+     nll += -dnorm(ulogNA1(i),Type(0),Type(1),true);
+   }
+// }
+
    
   // *** Calculating SSB
   array<Type> SSBmatrix(nYears,nAges);
@@ -379,7 +393,12 @@ Type objective_function<Type>::operator() ()
   vector<Type> NY1(nAges); // first age
   NY1=exp(logNY1);
   vector<Type> NA1(nYears-1); // first year
-  NA1=exp(logNA1);
+  if(REswitch < 1){
+    NA1=exp(logNA1);
+  }
+  if(REswitch > 0){
+    NA1=exp(logNA1re);
+  }
   vector<Type> RecAge6(nYears); // recruitment at age 6
   for (int y=0; y<nYears; ++y){
     RecAge6(y)=exp(logN(y,6));
@@ -411,9 +430,14 @@ Type objective_function<Type>::operator() ()
   ADREPORT(nll2);
   ADREPORT(nll3);
   //ADREPORT(logNY1);
-  ADREPORT(logNA1);
+  if(REswitch > 0){
+    ADREPORT(logNA1re);
+  }
   //ADREPORT(alogNY1);
-  ADREPORT(alogNA1);
+  if(REswitch > 0){
+    ADREPORT(alogNA1);
+  }
+   
   //ADREPORT(nll);
   ADREPORT(logTriN);
   // returning negative log-likelihood

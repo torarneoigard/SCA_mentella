@@ -12,9 +12,10 @@
 # Benjamin Planque, Tor Arne ??ig??rd and Alf Harbitz, February 2016
 
 load("SCA_mentella_data.RData") # load data
+data$REswitch <- REswitch
 parameters <- list(
   logNY1=rep(17.1,data$nAges),    # log-numbers in year 1 (for all ages) 
-  #logNA1=rep(18.2,(data$nYears-1)), # this is to be brought back for fixed effect model
+  logNA1=rep(18.2,(data$nYears-1)), 
   DemlogFY=rep(-4,data$nYears),   # partial log-Mortality by year for the Demersal Fleet (separable mortality)
   PellogFY=c(rep(-1e6,14),rep(-4,data$nYears-14)),  # partial log-Mortality by year for the Pelagic Fleet (separable mortality)
   pDema50=0,                      # Demersal fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
@@ -44,27 +45,45 @@ parameters <- list(
   palogNA1 = 1,
   logSigmalogNA1=0,
   ulogNA1=rep(0,(data$nYears-1))
-  #initlogNY1A1 = 20
+  ##initlogNY1A1 = 20
 )
 
 compile("SCA_mentella_model.cpp")           # compile SCA model
 dyn.load(dynlib("SCA_mentella_model"))      # load model
 
-obj <- MakeADFun(data,parameters,random=c("ulogNA1"),DLL="SCA_mentella_model",map=list(
-  PellogFY=factor(c(rep(NA,14),1:8)),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
-  logQSurvey2=factor(NA),                   # Survey scaling factor for the ecosystem survey is fixed
-  Demsplus=factor(NA),                      # Demersal fleet selectivity for the +group is fixed
-  Pelsplus=factor(NA),                      # Pelagic fleet selectivity for the +group is fixed
-  logb1Winter=factor(NA),                   # Winter survey selectivity for 'young' fih is set to 1
-  logb1Eco=factor(NA),                      # Ecosystem survey selectivity for 'young' fih is set to 1
-  logb2Russian=factor(NA),                  # Russian survey selectivity for 'old' fih is set to 1
-  logM2=factor(NA))                         # Natural mortality is fixed
-)
+#Objective function depends on wether or not you want logNA1 as random or fixed effect
+if(REswitch == 0){
+  obj <- MakeADFun(data,parameters,DLL="SCA_mentella_model",map=list(
+    PellogFY=factor(c(rep(NA,14),1:8)),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
+    logQSurvey2=factor(NA),                   # Survey scaling factor for the ecosystem survey is fixed
+    Demsplus=factor(NA),                      # Demersal fleet selectivity for the +group is fixed
+    Pelsplus=factor(NA),                      # Pelagic fleet selectivity for the +group is fixed
+    logb1Winter=factor(NA),                   # Winter survey selectivity for 'young' fih is set to 1
+    logb1Eco=factor(NA),                      # Ecosystem survey selectivity for 'young' fih is set to 1
+    logb2Russian=factor(NA),                  # Russian survey selectivity for 'old' fih is set to 1
+    logM2=factor(NA),                         # Natural mortality is fixed
+    palogNA1 = factor(NA),                    # parameters for random effect are not estimated 
+    logSigmalogNA1=factor(NA),                # parameters for random effect are not estimated 
+    ulogNA1=factor(rep(NA,(data$nYears-1))))  # parameters for random effect are not estimated 
+  )
+} else {
+  obj <- MakeADFun(data,parameters,random=c("ulogNA1"),DLL="SCA_mentella_model",map=list(
+    PellogFY=factor(c(rep(NA,14),1:8)),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
+    logQSurvey2=factor(NA),                   # Survey scaling factor for the ecosystem survey is fixed
+    Demsplus=factor(NA),                      # Demersal fleet selectivity for the +group is fixed
+    Pelsplus=factor(NA),                      # Pelagic fleet selectivity for the +group is fixed
+    logb1Winter=factor(NA),                   # Winter survey selectivity for 'young' fih is set to 1
+    logb1Eco=factor(NA),                      # Ecosystem survey selectivity for 'young' fih is set to 1
+    logb2Russian=factor(NA),                  # Russian survey selectivity for 'old' fih is set to 1
+    logM2=factor(NA),                         # Natural mortality is fixed
+    logNA1=factor(rep(NA,(data$nYears-1))))   # Fixed effect is not estimated 
+  )
+}
 
 # obj$fn()
 # obj$gr()
 system.time(opt <- nlminb(obj$par,obj$fn,obj$gr,control = list(eval.max = 1e6,maxit = 1e6)))
-#system.time(opt2 <- optim(obj$par,obj$fn,obj$gr,control = list(maxit = 1e8)))
+
 rep <- sdreport(obj)
 R.code <- scan('SCA_mentella_model.R',what="",sep="\n")  # reads the current file and store it into the variable 'code'
 cpp.code <- scan('SCA_mentella_model.cpp',what="",sep="\n")  # reads the current file and store it into the variable 'code'

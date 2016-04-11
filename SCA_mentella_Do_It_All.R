@@ -3,12 +3,14 @@
 #####################
 ## INITIALISATION  ##
 #####################
-#test
+# 1. what switches needed
+# 2. ggplot and source
+# 3. add random effect switch as data input.
 ## LIBRARIES
-library(TMB)                                # Load TMB library
-library(ggplot2)                            # Load ggplot2 library
-library(reshape)                            # load the reshape library
-library(gamlss)                             # load the gamlss library
+require(TMB)                                # Load TMB library
+require(ggplot2)                            # Load ggplot2 library
+require(reshape)                            # load the reshape library
+require(gamlss)                             # load the gamlss library
 
 ## CLEAR ALL
 cat("\014")                                 # cear console
@@ -17,7 +19,7 @@ graphics.off()                              # clear graphical windows
 
 ## OPTIONS
 YearSpan=1992:2013                          # set the range of year over which the model is run
-RESwitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
+REswitch=0                                  # Switch for running the model with random effects on the recruits (NA1)
                                             # 0=fixed effects, 1=random effects
 
 ## Working Directory
@@ -37,5 +39,5 @@ source('./SCA_mentella_model.R')
 #####################
 ## PLOTS           ##
 #####################
-source('./SCA_mentella_plots.R')
+source('./SCA_mentella_plots.R',print.eval = TRUE)
 

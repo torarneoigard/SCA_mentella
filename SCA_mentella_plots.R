@@ -17,7 +17,11 @@ parameters=model$parameters                 # and parameters
 rep.matrix <- summary(model$rep)            # get the list of reported values and standard deviations
 rep.rnames <- rownames(rep.matrix)          # get the names of variables
 indlogNY1 <- which(rep.rnames=="logNY1")    # extract line numbers for numbers in year one
-indlogNA1 <- which(rep.rnames=="logNA1")    # extract line numbers for numbers at age one
+if(REswitch == 0){
+indlogNA1 <- which(rep.rnamess=="logNA1")    # extract line numbers for numbers at age one
+} else {
+  indlogNA1 <- which(rep.rnames == "logNA1re")
+}
 indDemlogFY <- which(rep.rnames=="DemlogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
 indPellogFY <- which(rep.rnames=="PellogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
 indlogitDemFA <- which(rep.rnames=="logitDemFA") # extract line numbers for demersal fishing mortality in years (Fy's)
@@ -85,6 +89,7 @@ ggplot(data=PredictedNinLastYear,aes(x=Age,y=Npred))+
   geom_pointrange(aes(ymin = N05, ymax = N95),colour='black',size=.5,fatten=1)+
   labs(x='Age (year)',y='Numbers (millions)',title=paste('Numbers-at-age in',data$maxYear+1))
 
+
 # Numbers-at-age in year 1
 NY1=data.frame(Age=data$minAge:data$maxAge,
                NY1=exp(logNY1)/1e6,
@@ -95,6 +100,7 @@ ggplot(data=NY1,aes(x=Age,y=NY1))+
   geom_bar(stat="identity",fill="gray80")+
   geom_pointrange(aes(ymin = N05, ymax = N95),colour='black',size=.5,fatten=0.1)+
   labs(x='Age (year)',y='Numbers (millions)',title=paste('Numbers-at-age in',data$minYear))
+
 
 # Numbers-at-age 1 (2y old)
 NA1=data.frame(Year=data$minYear:data$maxYear,
@@ -107,6 +113,7 @@ ggplot(data=NA1,aes(x=Year,y=NA1))+
   geom_pointrange(aes(ymin = N05, ymax = N95),colour='black',size=.5,fatten=0.1)+
   labs(x='Year',y='Numbers (millions)',title='Numbers of 2y old')
 
+
 # SSB
 SSB=data.frame(Year=data$minYear:data$maxYear,
                SSB=exp(logSSB)/1e3,
@@ -117,6 +124,7 @@ ggplot(data=SSB,aes(x=Year,y=SSB))+
   geom_bar(stat="identity",fill="gray80")+
   geom_pointrange(aes(ymin = SSB05, ymax = SSB95),colour='black',size=.5,fatten=0.1)+
   labs(x='Year',y='Biomass (tonnes)',title='Spawning Stock Biomass')
+
 
 # Fishing mortalities
 FY=data.frame(Year=data$minYear:data$maxYear,
@@ -134,6 +142,7 @@ ggplot(data=FY,aes(x=Year))+
   geom_line(aes(y=PelFY),colour='red')+
   geom_ribbon(aes(y = PelFY,ymin = PelFY05, ymax = PelFY95),fill='lightpink',alpha=0.5)+
   labs(x='Year',y='Fishing mortality (Fys)',title='Annual fishing mortality')
+
 
 # Fishing selectivities
 # ... to be continued, these need to be reported as 'sdreport' in the cpp code of the model
@@ -179,6 +188,7 @@ ggplot(data=SA,aes(x=Age))+
   geom_line(aes(y=SARussian),colour='red')+
   labs(x='Age (year)',y='Survey selectivity (Sa)',title='Survey selectivities-at-age')+
   lims(y=c(0,1.2))
+
 
 ###########################
 # Diagnostics - Residuals #
