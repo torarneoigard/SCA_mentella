@@ -18,7 +18,7 @@ rep.matrix <- summary(model$rep)            # get the list of reported values an
 rep.rnames <- rownames(rep.matrix)          # get the names of variables
 indlogNY1 <- which(rep.rnames=="logNY1")    # extract line numbers for numbers in year one
 if(REswitch == 0){
-indlogNA1 <- which(rep.rnamess=="logNA1")    # extract line numbers for numbers at age one
+indlogNA1 <- which(rep.rnames=="logNA1")    # extract line numbers for numbers at age one
 } else {
   indlogNA1 <- which(rep.rnames == "logNA1re")
 }
