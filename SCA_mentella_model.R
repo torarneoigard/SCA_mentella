@@ -51,10 +51,12 @@ parameters <- list(
 compile("SCA_mentella_model.cpp")           # compile SCA model
 dyn.load(dynlib("SCA_mentella_model"))      # load model
 
+NoPellFy <- 1992:2005       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
+ind <- which(NoPellFy %in% YearSpan)
 #Objective function depends on wether or not you want logNA1 as random or fixed effect
 if(REswitch == 0){
   obj <- MakeADFun(data,parameters,DLL="SCA_mentella_model",map=list(
-    PellogFY=factor(c(rep(NA,14),1:8)),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
+    PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind)))),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
     logQSurvey2=factor(NA),                   # Survey scaling factor for the ecosystem survey is fixed
     Demsplus=factor(NA),                      # Demersal fleet selectivity for the +group is fixed
     Pelsplus=factor(NA),                      # Pelagic fleet selectivity for the +group is fixed
@@ -68,7 +70,7 @@ if(REswitch == 0){
   )
 } else {
   obj <- MakeADFun(data,parameters,random=c("ulogNA1"),DLL="SCA_mentella_model",map=list(
-    PellogFY=factor(c(rep(NA,14),1:8)),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
+    PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind)))),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
     logQSurvey2=factor(NA),                   # Survey scaling factor for the ecosystem survey is fixed
     Demsplus=factor(NA),                      # Demersal fleet selectivity for the +group is fixed
     Pelsplus=factor(NA),                      # Pelagic fleet selectivity for the +group is fixed
