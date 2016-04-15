@@ -16,7 +16,7 @@ rm(list=ls())                               # clear workspace
 graphics.off()                              # clear graphical windows
 
 ## OPTIONS
-YearSpan=1992:2013                          # set the range of year over which the model is run
+YearSpan=1992:2014                          # set the range of year over which the model is run
 REswitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
                                             # 0=fixed effects, 1=random effects
 
