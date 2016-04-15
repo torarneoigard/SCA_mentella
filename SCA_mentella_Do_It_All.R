@@ -3,9 +3,7 @@
 #####################
 ## INITIALISATION  ##
 #####################
-# 1. what switches needed
-# 2. ggplot and source
-# 3. add random effect switch as data input.
+
 ## LIBRARIES
 require(TMB)                                # Load TMB library
 require(ggplot2)                            # Load ggplot2 library
@@ -18,8 +16,8 @@ rm(list=ls())                               # clear workspace
 graphics.off()                              # clear graphical windows
 
 ## OPTIONS
-YearSpan=1992:2013                          # set the range of year over which the model is run
-REswitch=0                                  # Switch for running the model with random effects on the recruits (NA1)
+YearSpan=1992:2014                          # set the range of year over which the model is run
+REswitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
                                             # 0=fixed effects, 1=random effects
 
 ## Working Directory
