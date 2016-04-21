@@ -12,7 +12,6 @@
 # Benjamin Planque, Tor Arne ??ig??rd and Alf Harbitz, February 2016
 
 load("SCA_mentella_data.RData") # load data
-data$REswitch <- REswitch
 parameters <- list(
   logNY1=rep(17.1,data$nAges),    # log-numbers in year 1 (for all ages) 
   logNA1=rep(18.2,(data$nYears-1)), 

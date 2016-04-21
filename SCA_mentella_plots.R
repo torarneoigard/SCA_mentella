@@ -138,7 +138,7 @@ FY=data.frame(Year=data$minYear:data$maxYear,
 #quartz("",7,5)
 ggplot(data=FY,aes(x=Year))+
   geom_line(aes(y=DemFY))+
-  geom_ribbon(aes(y = DemFY,ymin = DemFY05, ymax = DemFY95),fill='grey70',alpha=0.5)+
+  geom_ribbon(aes(y = DemFY,ymin = DemFY05, ymax = DemFY95),fill='lightblue',alpha=0.5)+
   geom_line(aes(y=PelFY),colour='red')+
   geom_ribbon(aes(y = PelFY,ymin = PelFY05, ymax = PelFY95),fill='lightpink',alpha=0.5)+
   labs(x='Year',y='Fishing mortality (Fys)',title='Annual fishing mortality')

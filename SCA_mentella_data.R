@@ -158,6 +158,7 @@ SurveyTime=c(0.12,0.75,0.9)
 
 data=list()
 #data$Date=date()
+data$REswitch=REswitch
 data$minYear=YearSpan[1]
 data$maxYear=YearSpan[length(YearSpan)]
 data$minAgeInCatch=min(CatchAtAge2$Age)
