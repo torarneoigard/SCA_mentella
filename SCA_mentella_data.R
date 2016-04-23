@@ -180,6 +180,10 @@ data$nAgesInCatch=length(data$minAgeInCatch:data$maxAgeInCatch)
 data$nAges=length(data$minAge:data$maxAge)
 data$nSurveys=length(unique(X$Survey))
 data$SurveyTime=SurveyTime
+# Additional data needed for the plots
+data$Winter=Winter
+data$Ecosystem=Ecosystem
+data$Russian2=Russian2
 
 save(data,file='SCA_mentella_data.Rdata')
 

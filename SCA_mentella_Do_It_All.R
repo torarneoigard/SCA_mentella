@@ -17,7 +17,7 @@ graphics.off()                              # clear graphical windows
 
 ## OPTIONS
 YearSpan=1992:2015                          # set the range of year over which the model is run
-REswitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
+REswitch=0                                  # Switch for running the model with random effects on the recruits (NA1)
                                             # 0=fixed effects, 1=random effects
 
 ## Working Directory
@@ -38,4 +38,3 @@ source('./SCA_mentella_model.R')
 ## PLOTS           ##
 #####################
 source('./SCA_mentella_plots.R',print.eval = TRUE)
-

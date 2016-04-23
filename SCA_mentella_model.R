@@ -12,6 +12,8 @@
 # Benjamin Planque, Tor Arne ??ig??rd and Alf Harbitz, February 2016
 
 load("SCA_mentella_data.RData") # load data
+YearSpan=data$minYear:data$maxYear
+
 parameters <- list(
   logNY1=rep(17.1,data$nAges),    # log-numbers in year 1 (for all ages) 
   logNA1=rep(18.2,(data$nYears-1)), 
@@ -53,7 +55,7 @@ dyn.load(dynlib("SCA_mentella_model"))      # load model
 NoPellFy <- 1992:2005       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
 ind <- which(NoPellFy %in% YearSpan)
 #Objective function depends on wether or not you want logNA1 as random or fixed effect
-if(REswitch == 0){
+if(data$REswitch == 0){
   obj <- MakeADFun(data,parameters,DLL="SCA_mentella_model",map=list(
     PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind)))),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
     logQSurvey2=factor(NA),                   # Survey scaling factor for the ecosystem survey is fixed

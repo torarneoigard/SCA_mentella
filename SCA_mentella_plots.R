@@ -12,12 +12,13 @@
 
 load('SCA_mentella_model.Rdata')            # Load model results from TMB
 data=model$data                             # extract data
+YearSpan=data$minYear:data$maxYear
 parameters=model$parameters                 # and parameters
 
 rep.matrix <- summary(model$rep)            # get the list of reported values and standard deviations
 rep.rnames <- rownames(rep.matrix)          # get the names of variables
 indlogNY1 <- which(rep.rnames=="logNY1")    # extract line numbers for numbers in year one
-if(REswitch == 0){
+if(data$REswitch == 0){
 indlogNA1 <- which(rep.rnames=="logNA1")    # extract line numbers for numbers at age one
 } else {
   indlogNA1 <- which(rep.rnames == "logNA1re")
@@ -324,7 +325,7 @@ points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 #quartz()
 par(mfrow=c(2,2))
 # predicted vs observed catches
-obs=as.matrix(Winter[1:length(YearSpan),2:15])
+obs=as.matrix(data$Winter[1:length(YearSpan),2:15])
 Lq=logQSurvey1
 LSs=logSAWinter # log-selectivity
 pred=obs
@@ -361,7 +362,7 @@ points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 #quartz()
 par(mfrow=c(2,2))
 # predicted vs observed catches
-obs=as.matrix(Ecosystem[1:length(YearSpan),2:15])
+obs=as.matrix(data$Ecosystem[1:length(YearSpan),2:15])
 Lq=logQSurvey2
 LSs=logSAEco # log-selectivity
 pred=obs
@@ -398,7 +399,7 @@ points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 #quartz()
 par(mfrow=c(2,2))
 # predicted vs observed catches
-obs=as.matrix(Russian2[1:length(YearSpan),2:15])
+obs=as.matrix(data$Russian2[1:length(YearSpan),2:15])
 Lq=logQSurvey3
 LSs=logSARussian # log-selectivity
 pred=obs
