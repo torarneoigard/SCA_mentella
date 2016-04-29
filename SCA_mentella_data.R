@@ -120,7 +120,8 @@ Russian2=subset(Russian2,Year%in%YearSpan)
 
 # a. Winter
 Year=rep(Winter$Year,dim(Winter)[2]-1)
-Age=as.vector(rep(1,dim(Winter)[1])%*%t(2:15))
+#Age=as.vector(rep(1,dim(Winter)[1])%*%t(2:15))
+Age<-rep(2:15,each = dim(Winter)[1])
 Survey=rep(1,dim(Winter)[1]*(dim(Winter)[2]-1))
 Index=as.numeric(as.matrix(Winter[,2:15]))
 
@@ -128,7 +129,8 @@ Xa=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
 
 # b. Ecosystem
 Year=rep(Ecosystem$Year,dim(Ecosystem)[2]-1)
-Age=as.vector(rep(1,dim(Ecosystem)[1])%*%t(2:15))
+#Age=as.vector(rep(1,dim(Ecosystem)[1])%*%t(2:15))
+Age=rep(2:15,each = dim(Ecosystem)[1])
 Survey=rep(2,dim(Ecosystem)[1]*(dim(Ecosystem)[2]-1))
 Index=as.numeric(as.matrix(Ecosystem[,2:15]))
 
@@ -136,7 +138,8 @@ Xb=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
 
 # c. Russian groundfish
 Year=rep(Russian2$Year,dim(Russian2)[2]-1)
-Age=as.vector(rep(1,dim(Russian2)[1])%*%t(2:15))
+#Age=as.vector(rep(1,dim(Russian2)[1])%*%t(2:15))
+Age=rep(2:15,each = dim(Russian2)[1])
 Survey=rep(3,dim(Russian2)[1]*(dim(Russian2)[2]-1))
 Index=as.numeric(as.matrix(Russian2[,2:15]))
 
