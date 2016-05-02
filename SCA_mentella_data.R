@@ -14,7 +14,7 @@
 #####################
 ## CATCH DATA      ##
 #####################
-## Total Catch in tonnes
+## Total Catch in tonnes 
 TotalCatches=read.delim('TotalCatches.txt') # total catches in tonnes as reported in ICES AFWG (Table 6.1)
 # selection of data within the year span
 TotalCatches=subset(TotalCatches,Year%in%YearSpan)
