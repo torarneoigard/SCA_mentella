@@ -12,12 +12,13 @@
 
 load('SCA_mentella_model.Rdata')            # Load model results from TMB
 data=model$data                             # extract data
+YearSpan=data$minYear:data$maxYear
 parameters=model$parameters                 # and parameters
 
 rep.matrix <- summary(model$rep)            # get the list of reported values and standard deviations
 rep.rnames <- rownames(rep.matrix)          # get the names of variables
 indlogNY1 <- which(rep.rnames=="logNY1")    # extract line numbers for numbers in year one
-if(REswitch == 0){
+if(data$REswitch == 0){
 indlogNA1 <- which(rep.rnames=="logNA1")    # extract line numbers for numbers at age one
 } else {
   indlogNA1 <- which(rep.rnames == "logNA1re")
@@ -145,7 +146,6 @@ ggplot(data=FY,aes(x=Year))+
 
 
 # Fishing selectivities
-# ... to be continued, these need to be reported as 'sdreport' in the cpp code of the model
 FA=data.frame(Age=data$minAge:data$maxAge,
               DemFA=exp(logitDemFA)/(1+exp(logitDemFA)),
               DemFA05=exp(logitDemFA-2*logitDemFA.sd)/(1+exp(logitDemFA-2*logitDemFA.sd)),
@@ -324,7 +324,7 @@ points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 #quartz()
 par(mfrow=c(2,2))
 # predicted vs observed catches
-obs=as.matrix(Winter[1:length(YearSpan),2:15])
+obs=as.matrix(data$Winter[1:length(YearSpan),2:15])
 Lq=logQSurvey1
 LSs=logSAWinter # log-selectivity
 pred=obs
@@ -361,7 +361,7 @@ points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 #quartz()
 par(mfrow=c(2,2))
 # predicted vs observed catches
-obs=as.matrix(Ecosystem[1:length(YearSpan),2:15])
+obs=as.matrix(data$Ecosystem[1:length(YearSpan),2:15])
 Lq=logQSurvey2
 LSs=logSAEco # log-selectivity
 pred=obs
@@ -398,7 +398,7 @@ points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 #quartz()
 par(mfrow=c(2,2))
 # predicted vs observed catches
-obs=as.matrix(Russian2[1:length(YearSpan),2:15])
+obs=as.matrix(data$Russian2[1:length(YearSpan),2:15])
 Lq=logQSurvey3
 LSs=logSARussian # log-selectivity
 pred=obs
@@ -446,4 +446,124 @@ qqnorm((Winter.obs-Winter.pred),main='Winter Survey')
 qqnorm((Ecosystem.obs-Ecosystem.pred),main='Ecosystem Survey')
 qqnorm((Russian.obs-Russian.pred),main='Russian Groundfish Survey')
 
+#dev.off()
+
+#############################
+# ADDITIONAL PLOTS AND TABLES
+#############################
+
+# STOCK SUMMARY PLOT AND TABLE
+
+# POP MATRIX
+N=exp(logTriNmatrix[-dim(logTriNmatrix)[1],]) # numbers-at-age (until last year of data)
+N[N==1]=0 # replace ones by zeros (log<->exp transformation issue)
+
+# WEIGHT MATRIX
+W=matrix(nrow=dim(N)[1],ncol=dim(N)[2])
+W[,1:(data$maxAge-data$minAge+1)]=data$WeightAtAge
+W[,(data$maxAge-data$minAge+2):dim(W)[2]]=data$WeightAtAge[,(data$maxAge-data$minAge+1)]%*%t(rep(1,dim(W)[2]-(data$maxAge-data$minAge+1)))
+
+# Maturity matrix
+Mat=matrix(nrow=dim(N)[1],ncol=dim(N)[2])
+Mat[,1:(data$maxAge-data$minAge+1)]=data$MaturityAtAge
+Mat[,(data$maxAge-data$minAge+2):dim(Mat)[2]]=data$MaturityAtAge[,(data$maxAge-data$minAge+1)]%*%t(rep(1,dim(Mat)[2]-(data$maxAge-data$minAge+1)))
+
+# Biomass
+TSB=rowSums(N*W)/1000 # Total Stock Biomass in tonnes
+SSB=rowSums(N*W*Mat)/1000 # Spawning Stock Biomass in tonnes
+
+# Recruits
+Rec2=exp(logTriNmatrix[1:length(YearSpan),(2-data$minAge+1)])/1e6 # in millions
+Rec6=exp(logTriNmatrix[1:length(YearSpan),(6-data$minAge+1)])/1e6 # in millions
+
+# Fishing mortality
+DemFY=exp(DemlogFY)
+DemFA=exp(logitDemFA)/(1+exp(logitDemFA))
+PelFY=exp(PellogFY)
+PelFA=exp(logitPelFA)/(1+exp(logitPelFA))
+Ftot=(DemFY)%*%t(DemFA)+(PelFY)%*%t(PelFA)
+F12.18=rowMeans(Ftot[,((12:18)-data$minAge+1)])
+F19=Ftot[,(19-data$minAge+1)]
+
+# Stock Summary Table
+SS=data.frame(Year=YearSpan,
+              Recruits.at.age.2=round(Rec2),
+              Recruits.at.age.6=round(Rec6),
+              Total.Stock.Biomass=round(TSB),
+              Spawning.Stock.Biomass=round(SSB),
+              F12.18=round(F12.18,3),
+              F19=round(F19,3))
+write.table(SS,'SCA_mentella_stock_summary.txt',row.names = FALSE,quote = FALSE,sep='\t')
+
+
+ggplot_overlay=function(p1,p2){
+  # extract gtable
+  g1 <- ggplot_gtable(ggplot_build(p1))
+  g2 <- ggplot_gtable(ggplot_build(p2))
+  
+  # overlap the panel of 2nd plot on that of 1st plot
+  pp <- c(subset(g1$layout, name == "panel", se = t:r))
+  g <- gtable_add_grob(g1, g2$grobs[[which(g2$layout$name == "panel")]], pp$t, 
+                       pp$l, pp$b, pp$l)
+  
+  # axis tweaks
+  ia <- which(g2$layout$name == "axis-l")
+  ga <- g2$grobs[[ia]]
+  ax <- ga$children[[2]]
+  ax$widths <- rev(ax$widths)
+  ax$grobs <- rev(ax$grobs)
+  ax$grobs[[1]]$x <- ax$grobs[[1]]$x - unit(1, "npc") + unit(0, "cm")
+  g <- gtable_add_cols(g, g2$widths[g2$layout[ia, ]$l], length(g$widths) - 1)
+  g <- gtable_add_grob(g, ax, pp$t, length(g$widths) - 1, pp$b)
+  
+  # draw it
+  grid.draw(g)
+}
+
+# plot stock summary
+p1=ggplot(data=SS,aes(x=Year))+
+  geom_ribbon(aes(ymin = 0, ymax = Total.Stock.Biomass/1000),fill='lightblue',colour='black',alpha=0.7)+
+  geom_ribbon(aes(ymin = 0, ymax = Spawning.Stock.Biomass/1000),fill='darkblue',colour='black',alpha=0.7)+
+  labs(x='Year',y='Biomass (1000 tonnes)',title='S. mentella in ICES subareas 1 and 2 - summary')+
+  xlim(model$data$minYear-0.5,model$data$maxYear+.5)+
+  theme_bw()+
+  theme(panel.grid=element_blank(),panel.margin=unit(rep(0,4),rep("pt",4)))
+
+p2=ggplot(data=SS, aes(x=Year, y=Recruits.at.age.2))+ 
+  geom_bar(stat="identity",fill="yellow",colour='black',alpha=0.5,width=0.6)+
+  labs(y='Recruits at age 2y (millions)')+
+  xlim(model$data$minYear-0.5,model$data$maxYear+.5)+
+  theme_bw()+
+  theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())
+
+plot.new()
+ggplot_overlay(p1,p2)
+
+#######
+# plot age-structure in last year of the assessment
+#######
+LastYear=data.frame(Age=model$data$minAge+(1:dim(N)[2])-1,
+                    N=N[dim(N)[1],],
+                    TSB=N[dim(N)[1],]*W[dim(N)[1],]/1e6,
+                    SSB=N[dim(N)[1],]*W[dim(N)[1],]*Mat[dim(N)[1],]/1e6)
+LastYear=LastYear[-dim(LastYear)[1],]
+#scaling.coef=1.1*max(LastYear$TSB)/max(LastYear$N)
+#LastYear$tN=LastYear$N*scaling.coef
+p1=ggplot(data=LastYear,aes(x=Age))+
+  geom_ribbon(aes(ymin = 0, ymax = TSB),fill='lightblue',colour='black',alpha=0.7)+
+  geom_ribbon(aes(ymin = 0, ymax = SSB),fill='darkblue',colour='black',alpha=0.7)+
+#  geom_bar(stat='identity',aes(y=tN),width=.5,fill='yellow',colour='black',alpha=0.5)+
+  labs(x='Age',y='Biomass (1000 tonnes)',title=paste('Age structure in ',model$data$maxYear,sep=''))+
+  xlim(data$minAge-0.5,data$minAge+dim(N)[2]-1+0.5)+
+  theme_bw()+
+  theme(panel.grid=element_blank())
+
+p2=ggplot(data=LastYear, aes(x=Age, y=N/1e6))+ 
+  geom_bar(stat="identity",fill="yellow",colour='black',alpha=0.5,width=0.6)+
+  xlim(data$minAge-0.5,data$minAge+dim(N)[2]-1+0.5)+
+  theme_bw()+
+  theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())
+
+plot.new()
+ggplot_overlay(p1,p2)
 dev.off()

@@ -14,7 +14,7 @@
 #####################
 ## CATCH DATA      ##
 #####################
-## Total Catch in tonnes
+## Total Catch in tonnes 
 TotalCatches=read.delim('TotalCatches.txt') # total catches in tonnes as reported in ICES AFWG (Table 6.1)
 # selection of data within the year span
 TotalCatches=subset(TotalCatches,Year%in%YearSpan)
@@ -138,7 +138,8 @@ Russian2=subset(Russian2,Year%in%YearSpan)
 
 # a. Winter
 Year=rep(Winter$Year,dim(Winter)[2]-1)
-Age=as.vector(rep(1,dim(Winter)[1])%*%t(2:15))
+#Age=as.vector(rep(1,dim(Winter)[1])%*%t(2:15))
+Age<-rep(2:15,each = dim(Winter)[1])
 Survey=rep(1,dim(Winter)[1]*(dim(Winter)[2]-1))
 Index=as.numeric(as.matrix(Winter[,2:15]))
 
@@ -146,7 +147,8 @@ Xa=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
 
 # b. Ecosystem
 Year=rep(Ecosystem$Year,dim(Ecosystem)[2]-1)
-Age=as.vector(rep(1,dim(Ecosystem)[1])%*%t(2:15))
+#Age=as.vector(rep(1,dim(Ecosystem)[1])%*%t(2:15))
+Age=rep(2:15,each = dim(Ecosystem)[1])
 Survey=rep(2,dim(Ecosystem)[1]*(dim(Ecosystem)[2]-1))
 Index=as.numeric(as.matrix(Ecosystem[,2:15]))
 
@@ -154,7 +156,8 @@ Xb=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
 
 # c. Russian groundfish
 Year=rep(Russian2$Year,dim(Russian2)[2]-1)
-Age=as.vector(rep(1,dim(Russian2)[1])%*%t(2:15))
+#Age=as.vector(rep(1,dim(Russian2)[1])%*%t(2:15))
+Age=rep(2:15,each = dim(Russian2)[1])
 Survey=rep(3,dim(Russian2)[1]*(dim(Russian2)[2]-1))
 Index=as.numeric(as.matrix(Russian2[,2:15]))
 
@@ -198,6 +201,10 @@ data$nAgesInCatch=length(data$minAgeInCatch:data$maxAgeInCatch)
 data$nAges=length(data$minAge:data$maxAge)
 data$nSurveys=length(unique(X$Survey))
 data$SurveyTime=SurveyTime
+# Additional data needed for the plots
+data$Winter=Winter
+data$Ecosystem=Ecosystem
+data$Russian2=Russian2
 
 save(data,file='SCA_mentella_data.Rdata')
 
