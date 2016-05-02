@@ -25,14 +25,32 @@ TotalCatchAtAge=read.table("CatchAtAge.txt",header=TRUE) # note that the last gr
 TotalCatchAtAge=subset(TotalCatchAtAge,Year%in%YearSpan)
 
 # reshaping into a three column vector with Year, Age, Catch in number
-TotalCatchAtAge2=matrix(nrow=prod(dim(TotalCatchAtAge)[1],dim(TotalCatchAtAge)[2]-1),ncol=3)
-StartAge=as.numeric(substr(colnames(TotalCatchAtAge)[2],2,5))
-for (age in 2:dim(TotalCatchAtAge)[2])
-{
-  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),1]=TotalCatchAtAge[,1] # Year
-  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),2]=StartAge+age-2 # Age
-  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),3]=TotalCatchAtAge[1:dim(TotalCatchAtAge)[1],age]*1000 # Numbers
-}
+# modification by Alf 20.04.2016
+
+TCA = TotalCatchAtAge                           # helping variable
+siz = dim(TCA);                                 # size of TCA, = [nrow ncol]
+ny = siz[1]                                     # no of ages
+na = siz[2]-1                                   # no or ages, first column contains years
+age1 = as.numeric(substr(colnames(TCA)[2],2,5)) # first age
+AgeSpan = age1:(age1+na-1)                      # parenthesis necessary!
+yrvec = as.matrix(rep(YearSpan,na))             # repeats yrspan na time in col.vector
+agevec = as.matrix(rep(AgeSpan,each = ny))      # repeats each age ny times in col.vector
+catchvec = array(as.matrix(TCA[,2:(na+1)]))     # makes columnvector of catchmatrix for col3 in new table
+TotalCatchAtAge2 = cbind(yrvec,agevec,catchvec*1000) # new table
+#
+
+# The above modification replaces the following commands
+#
+#TotalCatchAtAge2=matrix(nrow=prod(dim(TotalCatchAtAge)[1],dim(TotalCatchAtAge)[2]-1),ncol=3)
+#StartAge=as.numeric(substr(colnames(TotalCatchAtAge)[2],2,5))
+#for (age in 2:dim(TotalCatchAtAge)[2])
+#{
+#  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),1]=TotalCatchAtAge[,1] # Year
+#  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),2]=StartAge+age-2 # Age
+#  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),3]=TotalCatchAtAge[1:dim(TotalCatchAtAge)[1],age]*1000 # Numbers
+#}
+# end of removed section due to modification
+
 colnames(TotalCatchAtAge2)=c("Year","Age","Catch.in.number")
 TotalCatchAtAge2=as.data.frame(TotalCatchAtAge2)
 # selection of data within the year span
