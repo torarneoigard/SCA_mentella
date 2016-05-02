@@ -28,7 +28,7 @@ TotalCatchAtAge=subset(TotalCatchAtAge,Year%in%YearSpan)
 # modification by Alf 20.04.2016
 
 TCA = TotalCatchAtAge                           # helping variable
-siz = dim(TCA);                                 # size of TCA, = [nrow ncol]
+siz = dim(TCA)                                 # size of TCA, = [nrow ncol]
 ny = siz[1]                                     # no of ages
 na = siz[2]-1                                   # no or ages, first column contains years
 age1 = as.numeric(substr(colnames(TCA)[2],2,5)) # first age
