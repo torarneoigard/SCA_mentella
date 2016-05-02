@@ -1,0 +1,28 @@
+1. the model needs to be general enough, so that we can change options in the R code, without recompiling the cpp code. Things we might want to change include
+- the time period over which the model is run. This is currently 1992-2013, but we should be able to add or remove years. - DONE
+- the random effects. We should be able to turn this on/off as desired - DONE
+- the ggplot/source issue to be resolved - DONE
+- the surveys used. We currently use three surveys, 
+  but it should be possible to easily include a new or remove a existing survey. 
+  This is needed to check model sensitivity to surveys and also to 
+  prepare for inclusion of new surveys from the Norwegian Sea - IN PROGRESS
+
+
+2. New surveys and likelihood for age groups beyond the current 19+ group
+As we discussed in Lauklines, Norwegian Sea surveys can be included as they provide recent information on the older fraction of the population. This means that we should be able to
+- include new surveys (see above)
+- calculate the likelihood for these new surveys based on older age groups (i.e. not stop at 19+)
+- account for increase in age reading uncertainty eventually by grouping together different ages (e.g. 19-24, 25-29, 30-33, and so on)
+
+3. Other things that are longer shots in time:
+- incorporate estimates of uncertainties in catch@age and numbers@age from ECA/StoX
+- prepare the TRACE document, i.e. full documentation of the model
+
+- Change in demersal fleet selectivity-at-age in 2014
+- Consider other models for the selectivity-at-age (random effects, other functional relationships)
+
+
+- Creating reports from R (tabels etc)
+- GitHub
+- Graphs
+- Retrospective patterns
