@@ -133,6 +133,10 @@ Russian2=as.data.frame(Russian2)
 # selection of data within the year span
 Russian2=subset(Russian2,Year%in%YearSpan)
 
+WGIDEEPS=read.table("WGIDEEPS.txt",header=TRUE) # survey indices 2008,2009,2013 for ages 7-75
+# selection of data within the year span
+WGIDEEPS=subset(WGIDEEPS,Year%in%YearSpan)
+
 ## Reshaping data into a 5 column vector with
 ## Year, Age, Survey, Gear selectivity, Survey Index
 
@@ -163,15 +167,24 @@ Index=as.numeric(as.matrix(Russian2[,2:15]))
 
 Xc=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
 
-X=rbind(Xa,Xb,Xc) # the Ogroup survey is no longer included
+# d. WGIDEEPS
+Year=rep(WGIDEEPS$Year,dim(WGIDEEPS)[2]-1)
+#Age=as.vector(rep(1,dim(Ecosystem)[1])%*%t(2:15))
+Age=rep(7:75,each = dim(WGIDEEPS)[1])
+Survey=rep(4,dim(WGIDEEPS)[1]*(dim(WGIDEEPS)[2]-1))
+Index=as.numeric(as.matrix(WGIDEEPS[,2:70]))
+
+Xd=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
+
+X=rbind(Xa,Xb,Xc,Xd) # combining data from the different surveys
 
 # remove lines with zero data
 X=subset(X,Index>0)
 # selection of data within the year span
 X=subset(X,Year%in%YearSpan)
 
-# Survey Timing
-SurveyTime=c(0.12,0.75,0.9)
+# Survey Timing (as fraction of the year)
+SurveyTime=c(0.12,0.75,0.9,0.67)
 
 ####################################
 ## EXPORT DATA  TO BE USED IN TMB ##
