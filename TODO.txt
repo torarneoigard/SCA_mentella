@@ -26,3 +26,6 @@ As we discussed in Lauklines, Norwegian Sea surveys can be included as they prov
 - GitHub
 - Graphs
 - Retrospective patterns
+
+4. Exercises and tests:
+- set the observation error for the total catches as a free parameter.
