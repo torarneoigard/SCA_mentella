@@ -29,4 +29,10 @@ As we discussed in Lauklines, Norwegian Sea surveys can be included as they prov
 
 4. Exercises and tests:
 - set the observation error for the total catches as a free parameter (at least Alf).
-- Use ecosystem survey for absolute scaling, and other suveys for proportions at age
+- Use ecosystem survey for absolute scaling, and other suveys for proportions at age.
+
+5. Weight-at-age
+- Incorporate a growth model (e.g. Von Bertalanffy/Gompertz) for weiaght-at-age, with a general form (fixed effect) and variations from year to year (random effect).
+- Add an observation model for the weight at age
+- Add a likelihood component related to WAA.
+-> This might be a solution to get rid of the 'noisy' signal from WAA data.
