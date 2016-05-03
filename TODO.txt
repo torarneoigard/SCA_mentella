@@ -28,4 +28,4 @@ As we discussed in Lauklines, Norwegian Sea surveys can be included as they prov
 - Retrospective patterns
 
 4. Exercises and tests:
-- set the observation error for the total catches as a free parameter.
+- set the observation error for the total catches as a free parameter (at least Alf).
