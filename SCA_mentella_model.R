@@ -67,9 +67,9 @@ if(data$REswitch == 0){
     Pelsplus=factor(NA),                      # Pelagic fleet selectivity for the +group is fixed
     #logb1Winter=factor(NA),                   # Winter survey selectivity for 'young' fih is set to 1
     #logb1Eco=factor(NA),                      # Ecosystem survey selectivity for 'young' fih is set to 1
-    logb1Map = data$logb1Map,
+    logb1 = data$logb1Map,
     #logb2Russian=factor(NA),                  # Russian survey selectivity for 'old' fih is set to 1
-    logb2Map = data$logb2Map,
+    logb2 = data$logb2Map,
     logM2=factor(NA),                         # Natural mortality is fixed
     palogNA1 = factor(NA),                    # parameters for random effect are not estimated 
     logSigmalogNA1=factor(NA),                # parameters for random effect are not estimated 

@@ -458,11 +458,13 @@ Type objective_function<Type>::operator() ()
   //ADREPORT(DemFA);
   ADREPORT(logitDemFA);
   ADREPORT(logitPelFA);
-  
+  ADREPORT(SA);
+  ADREPORT(logSA);
   //NEED TO FIX ADREPORT
   //ADREPORT(SAWinter);
   //ADREPORT(SAEco);
   //ADREPORT(SARussian);
+  
   
   //ADREPORT(logSAWinter);
   //ADREPORT(logSAEco);

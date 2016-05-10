@@ -259,7 +259,7 @@ data$logb2Init <- logb2Init
 # Additional data needed for the plots 
 if("Winter"%in%surveys) data$Winter=Winter
 if("Ecosystem"%in%surveys) data$Ecosystem=Ecosystem
-if("Russian"%in%surveys) data$Russian2=Russian2
+if("Russian"%in%surveys) data$Russian=Russian2
 
 data$logQSurveyInit <- logQSurveyInit      #Initial value for logQSurveys
 data$logQSurveyMap <- factor(logQSurveyMap)
