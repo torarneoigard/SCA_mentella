@@ -27,12 +27,14 @@ indDemlogFY <- which(rep.rnames=="DemlogFY") # extract line numbers for demersal
 indPellogFY <- which(rep.rnames=="PellogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
 indlogitDemFA <- which(rep.rnames=="logitDemFA") # extract line numbers for demersal fishing mortality in years (Fy's)
 indlogitPelFA <- which(rep.rnames=="logitPelFA") # extract line numbers for demersal fishing mortality in years (Fy's)
-indSAWinter <- which(rep.rnames=="SAWinter") # extract line numbers for winter survey selectivity at age
-indSAEco <- which(rep.rnames=="SAEco") # extract line numbers for ecosystem survey selectivity at age
-indSARussian <- which(rep.rnames=="SARussian") # extract line numbers for Russian groundfish survey selectivity at age
-indlogSAWinter <- which(rep.rnames=="logSAWinter") # extract line numbers for winter survey selectivity at age
-indlogSAEco <- which(rep.rnames=="logSAEco") # extract line numbers for ecosystem survey selectivity at age
-indlogSARussian <- which(rep.rnames=="logSARussian") # extract line numbers for Russian groundfish survey selectivity at age
+#indSAWinter <- which(rep.rnames=="SAWinter") # extract line numbers for winter survey selectivity at age
+#indSAEco <- which(rep.rnames=="SAEco") # extract line numbers for ecosystem survey selectivity at age
+#indSARussian <- which(rep.rnames=="SARussian") # extract line numbers for Russian groundfish survey selectivity at age
+indSA <- which(rep.rnames=="SA")
+#indlogSAWinter <- which(rep.rnames=="logSAWinter") # extract line numbers for winter survey selectivity at age
+#indlogSAEco <- which(rep.rnames=="logSAEco") # extract line numbers for ecosystem survey selectivity at age
+#indlogSARussian <- which(rep.rnames=="logSARussian") # extract line numbers for Russian groundfish survey selectivity at age
+indlogSA <- which(rep.rnames=="logSA")
 indlogSSB <- which(rep.rnames=="logSSB")    # extract line numbers for SSB
 indlogTriN <- which(rep.rnames=="logTriN")  # extract line numbers for triangular population matrix
 
@@ -50,22 +52,44 @@ logitDemFA <-  rep.matrix[indlogitDemFA,1]
 logitPelFA <-  rep.matrix[indlogitPelFA,1]
 logitDemFA.sd <-  rep.matrix[indlogitDemFA,2]
 logitPelFA.sd <-  rep.matrix[indlogitPelFA,2]
-SAWinter <- rep.matrix[indSAWinter,1]
-SAEco <- rep.matrix[indSAEco,1]
-SARussian <- rep.matrix[indSARussian,1]
-logSAWinter <- rep.matrix[indlogSAWinter,1]
-logSAWinter.sd <- rep.matrix[indlogSAWinter,2]
-logSAEco <- rep.matrix[indlogSAEco,1]
-logSAEco.sd <- rep.matrix[indlogSAEco,2]
-logSARussian <- rep.matrix[indlogSARussian,1]
-logSARussian.sd <- rep.matrix[indlogSARussian,2]
+SA <- matrix(rep.matrix[indSA,1],nrow = length(surveys),byrow = FALSE)
+#SAWinter <- rep.matrix[indSAWinter,1]
+#SAEco <- rep.matrix[indSAEco,1]
+#SARussian <- rep.matrix[indSARussian,1]
+logSA <- matrix(rep.matrix[indlogSA,1],nrow = length(surveys),byrow = FALSE)
+logSA.sd <- matrix(rep.matrix[indlogSA,2],nrow = length(surveys),byrow = FALSE)
+
+#logSAWinter <- rep.matrix[indlogSAWinter,1]
+#logSAWinter.sd <- rep.matrix[indlogSAWinter,2]
+#logSAEco <- rep.matrix[indlogSAEco,1]
+#logSAEco.sd <- rep.matrix[indlogSAEco,2]
+#logSARussian <- rep.matrix[indlogSARussian,1]
+#logSARussian.sd <- rep.matrix[indlogSARussian,2]
+
 logSSB <- rep.matrix[indlogSSB,1]
 logSSB.sd <- rep.matrix[indlogSSB,2]
 
 
-logQSurvey1=rep.matrix[rep.rnames=="logQSurvey1",1]
-logQSurvey2=parameters$logQSurvey2
-logQSurvey3=rep.matrix[rep.rnames=="logQSurvey3",1]
+#logQSurvey1=rep.matrix[rep.rnames=="logQSurvey1",1]
+#logQSurvey2=parameters$logQSurvey2
+#logQSurvey3=rep.matrix[rep.rnames=="logQSurvey3",1]
+
+logQSurvey <- array(NA,length(surveys))
+logQSurveytemp = rep.matrix[rep.rnames=="logQSurvey",1]
+oneless <- 0
+for (i in 1:length(surveys)){
+  if(!is.na(data$logQSurveyMap[i])){
+    logQSurvey[i] <- logQSurveytemp[i-oneless]
+  }  else{
+    logQSurvey[i] <- parameters$logQSurvey[i]
+    oneless <- oneless + 1
+  } 
+}
+
+#logQSurvey1=logQSurvey[1]
+#logQSurvey2=parameters$logQSurvey[2]
+#logQSurvey3=logQSurvey[2]
+
 
 
 # reformat the triangular population matrix
@@ -168,26 +192,42 @@ ggplot(data=FA,aes(x=Age))+
 
 # Survey selectivities
 # with confidence intervals
-SA=data.frame(Age=data$minAge:data$maxAge,
-              SAWinter=exp(logSAWinter),
-              SAWinter05=exp(logSAWinter-2*logSAWinter.sd),
-              SAWinter95=exp(logSAWinter+2*logSAWinter.sd),
-              SAEco=exp(logSAEco),
-              SAEco05=exp(logSAEco-2*logSAEco.sd),              
-              SAEco95=exp(logSAEco+2*logSAEco.sd),              
-              SARussian=exp(logSARussian),
-              SARussian05=exp(logSARussian-2*logSARussian.sd),              
-              SARussian95=exp(logSARussian+2*logSARussian.sd))
-#quartz("",7,5)
-ggplot(data=SA,aes(x=Age))+
+SAdf <- list(Age=data$minAge:data$maxAge)
+SAdf.names <- c("Age")
+counter = 2
+for (i in 1:length(surveys)){
+  SAdf[[counter]] <- exp(logSA[i,])
+  SAdf.names <- append(SAdf.names,paste("SA",surveys[i],sep = ""))
+  SAdf[[counter+1]] <- exp(logSA[i,]-2*logSA.sd[i,])
+  SAdf.names <- append(SAdf.names,paste("SA",surveys[i],"05",sep = ""))
+  SAdf[[counter+2]] <- exp(logSA[i,]+2*logSA.sd[i,])
+  SAdf.names <- append(SAdf.names,paste("SA",surveys[i],"95",sep = ""))
+  counter <- counter + 3
+}
+names(SAdf) <- SAdf.names
+SAdf <- as.data.frame(SAdf)
+
+ggplot(data=SAdf,aes(x=Age))+
   geom_ribbon(aes(ymin = SAWinter05, ymax = SAWinter95), fill = "lightblue",alpha=0.5)+
-  geom_ribbon(aes(ymin = SAEco05, ymax = SAEco95), fill = "gray70",alpha=0.5)+
+  geom_ribbon(aes(ymin = SAEcosystem05, ymax = SAEcosystem95), fill = "gray70",alpha=0.5)+
   geom_ribbon(aes(ymin = SARussian05, ymax = SARussian95), fill = "lightpink",alpha=0.5)+
   geom_line(aes(y=SAWinter),colour='blue')+
-  geom_line(aes(y=SAEco),colour='black')+
+  geom_line(aes(y=SAEcosystem),colour='black')+
   geom_line(aes(y=SARussian),colour='red')+
   labs(x='Age (year)',y='Survey selectivity (Sa)',title='Survey selectivities-at-age')+
   lims(y=c(0,1.2))
+
+#SAold=data.frame(Age=data$minAge:data$maxAge,
+#              SAWinter=exp(logSAWinter),
+#              SAWinter05=exp(logSAWinter-2*logSAWinter.sd),
+#              SAWinter95=exp(logSAWinter+2*logSAWinter.sd),
+#              SAEco=exp(logSAEco),
+#              SAEco05=exp(logSAEco-2*logSAEco.sd),              
+#              SAEco95=exp(logSAEco+2*logSAEco.sd),              
+#              SARussian=exp(logSARussian),
+#              SARussian05=exp(logSARussian-2*logSARussian.sd),              
+#              SARussian95=exp(logSARussian+2*logSARussian.sd))
+#quartz("",7,5)
 
 
 ###########################
@@ -318,133 +358,182 @@ points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 
 ##############################
 ## SURVEYS
-
-## WINTER SURVEY
-
-#quartz()
-par(mfrow=c(2,2))
-# predicted vs observed catches
-obs=as.matrix(data$Winter[1:length(YearSpan),2:15])
-Lq=logQSurvey1
-LSs=logSAWinter # log-selectivity
-pred=obs
-for (year in 1:length(YearSpan)){
-  for (age in 2:15){
-    pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
+obs.vec <- list()
+pred.vec <- list()
+for (i in 1:length(surveys)){
+  par(mfrow=c(2,2))
+  # predicted vs observed catches
+  indDF <- which(names(data)== surveys[i])
+  obs=as.matrix(data[[indDF]][1:length(YearSpan),2:15])
+  Lq=logQSurvey[i]
+  LSs=logSA[i,] # log-selectivity
+  pred=obs
+  for (year in 1:length(YearSpan)){
+    for (age in 2:15){
+      pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
+    }
   }
+  valid=(obs>0)&(pred>0)
+  obs.vec[[i]]=log(as.vector(obs[valid]))
+  pred.vec[[i]]=log(as.vector(pred[valid]))
+  #Winter.obs=obs.vec
+  #Winter.pred=pred.vec
+  
+  plot(obs.vec[[i]]~pred.vec[[i]],main=paste(surveys[i],"survey"),xlim=c(3,15),ylim=c(3,15),ylab='log(observed indices)',xlab='log(fitted indices)')
+  abline(0,1,lty=2,col='red')
+  # Anomalies in log-catches
+  delta=as.matrix(log(obs)-log(pred))
+  delta[is.finite(delta)==FALSE]=NA
+  # Residuals by Age
+  boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
+  abline(0,0,lty=2,col='red')
+  # Residuals by Year
+  boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
+  abline(0,0,lty=2,col='red')
+  # Bubble-plot by Age*Year
+  Xpos=rep(1,length(YearSpan))%*%t(2:15)
+  Ypos=YearSpan%*%t(rep(1,14))
+  plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
+  points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 }
-valid=(obs>0)&(pred>0)
-obs.vec=log(as.vector(obs[valid]))
-pred.vec=log(as.vector(pred[valid]))
-Winter.obs=obs.vec
-Winter.pred=pred.vec
 
-plot(obs.vec~pred.vec,main='Winter survey',xlim=c(3,15),ylim=c(3,15),ylab='log(observed indices)',xlab='log(fitted indices)')
-abline(0,1,lty=2,col='red')
-# Anomalies in log-catches
-delta=as.matrix(log(obs)-log(pred))
-delta[is.finite(delta)==FALSE]=NA
-# Residuals by Age
-boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
-abline(0,0,lty=2,col='red')
-# Residuals by Year
-boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
-abline(0,0,lty=2,col='red')
-# Bubble-plot by Age*Year
-Xpos=rep(1,length(YearSpan))%*%t(2:15)
-Ypos=YearSpan%*%t(rep(1,14))
-plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
-points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 
-## ECOSYSTEM SURVEY
 
-#quartz()
-par(mfrow=c(2,2))
-# predicted vs observed catches
-obs=as.matrix(data$Ecosystem[1:length(YearSpan),2:15])
-Lq=logQSurvey2
-LSs=logSAEco # log-selectivity
-pred=obs
-for (year in 1:length(YearSpan)){
-  for (age in 2:15){
-    pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
-  }
-}
-valid=(obs>0)&(pred>0)
-obs.vec=log(as.vector(obs[valid]))
-pred.vec=log(as.vector(pred[valid]))
-Ecosystem.obs=obs.vec
-Ecosystem.pred=pred.vec
-
-plot(obs.vec~pred.vec,main='Ecosystem survey',xlim=c(3,15),ylim=c(3,15),ylab='log(observed indices)',xlab='log(fitted indices)')
-abline(0,1,lty=2,col='red')
-# Anomalies in log-catches
-delta=as.matrix(log(obs)-log(pred))
-delta[is.finite(delta)==FALSE]=NA
-# Residuals by Age
-boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
-abline(0,0,lty=2,col='red')
-# Residuals by Year
-boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
-abline(0,0,lty=2,col='red')
-# Bubble-plot by Age*Year
-Xpos=rep(1,length(YearSpan))%*%t(2:15)
-Ypos=YearSpan%*%t(rep(1,14))
-plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
-points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
-
-## RUSSIAN GROUNDFISH SURVEY
-
-#quartz()
-par(mfrow=c(2,2))
-# predicted vs observed catches
-obs=as.matrix(data$Russian2[1:length(YearSpan),2:15])
-Lq=logQSurvey3
-LSs=logSARussian # log-selectivity
-pred=obs
-for (year in 1:length(YearSpan)){
-  for (age in 2:15){
-    pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
-  }
-}
-valid=(obs>0)&(pred>0)
-obs.vec=log(as.vector(obs[valid]))
-pred.vec=log(as.vector(pred[valid]))
-Russian.obs=obs.vec
-Russian.pred=pred.vec
-
-plot(obs.vec~pred.vec,main='Russian Groundfish survey',xlim=c(-4,4),ylim=c(-4,4),ylab='log(observed indices)',xlab='log(fitted indices)')
-abline(0,1,lty=2,col='red')
-# Anomalies in log-catches
-delta=as.matrix(log(obs)-log(pred))
-delta[is.finite(delta)==FALSE]=NA
-# Residuals by Age
-boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
-abline(0,0,lty=2,col='red')
-# Residuals by Year
-boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
-abline(0,0,lty=2,col='red')
-# Bubble-plot by Age*Year
-Xpos=rep(1,length(YearSpan))%*%t(2:15)
-Ypos=YearSpan%*%t(rep(1,14))
-plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
-points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
+# ## WINTER SURVEY
+# 
+# #quartz()
+# par(mfrow=c(2,2))
+# # predicted vs observed catches
+# obs=as.matrix(data$Winter[1:length(YearSpan),2:15])
+# Lq=logQSurvey1
+# LSs=logSAWinter # log-selectivity
+# pred=obs
+# for (year in 1:length(YearSpan)){
+#   for (age in 2:15){
+#     pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
+#   }
+# }
+# valid=(obs>0)&(pred>0)
+# obs.vec=log(as.vector(obs[valid]))
+# pred.vec=log(as.vector(pred[valid]))
+# Winter.obs=obs.vec
+# Winter.pred=pred.vec
+# 
+# plot(obs.vec~pred.vec,main='Winter survey',xlim=c(3,15),ylim=c(3,15),ylab='log(observed indices)',xlab='log(fitted indices)')
+# abline(0,1,lty=2,col='red')
+# # Anomalies in log-catches
+# delta=as.matrix(log(obs)-log(pred))
+# delta[is.finite(delta)==FALSE]=NA
+# # Residuals by Age
+# boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
+# abline(0,0,lty=2,col='red')
+# # Residuals by Year
+# boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
+# abline(0,0,lty=2,col='red')
+# # Bubble-plot by Age*Year
+# Xpos=rep(1,length(YearSpan))%*%t(2:15)
+# Ypos=YearSpan%*%t(rep(1,14))
+# plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
+# points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
+# 
+# ## ECOSYSTEM SURVEY
+# 
+# #quartz()
+# par(mfrow=c(2,2))
+# # predicted vs observed catches
+# obs=as.matrix(data$Ecosystem[1:length(YearSpan),2:15])
+# Lq=logQSurvey2
+# LSs=logSAEco # log-selectivity
+# pred=obs
+# for (year in 1:length(YearSpan)){
+#   for (age in 2:15){
+#     pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
+#   }
+# }
+# valid=(obs>0)&(pred>0)
+# obs.vec=log(as.vector(obs[valid]))
+# pred.vec=log(as.vector(pred[valid]))
+# Ecosystem.obs=obs.vec
+# Ecosystem.pred=pred.vec
+# 
+# plot(obs.vec~pred.vec,main='Ecosystem survey',xlim=c(3,15),ylim=c(3,15),ylab='log(observed indices)',xlab='log(fitted indices)')
+# abline(0,1,lty=2,col='red')
+# # Anomalies in log-catches
+# delta=as.matrix(log(obs)-log(pred))
+# delta[is.finite(delta)==FALSE]=NA
+# # Residuals by Age
+# boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
+# abline(0,0,lty=2,col='red')
+# # Residuals by Year
+# boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
+# abline(0,0,lty=2,col='red')
+# # Bubble-plot by Age*Year
+# Xpos=rep(1,length(YearSpan))%*%t(2:15)
+# Ypos=YearSpan%*%t(rep(1,14))
+# plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
+# points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
+# 
+# ## RUSSIAN GROUNDFISH SURVEY
+# 
+# #quartz()
+# par(mfrow=c(2,2))
+# # predicted vs observed catches
+# obs=as.matrix(data$Russian2[1:length(YearSpan),2:15])
+# Lq=logQSurvey3
+# LSs=logSARussian # log-selectivity
+# pred=obs
+# for (year in 1:length(YearSpan)){
+#   for (age in 2:15){
+#     pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
+#   }
+# }
+# valid=(obs>0)&(pred>0)
+# obs.vec=log(as.vector(obs[valid]))
+# pred.vec=log(as.vector(pred[valid]))
+# Russian.obs=obs.vec
+# Russian.pred=pred.vec
+# 
+# plot(obs.vec~pred.vec,main='Russian Groundfish survey',xlim=c(-4,4),ylim=c(-4,4),ylab='log(observed indices)',xlab='log(fitted indices)')
+# abline(0,1,lty=2,col='red')
+# # Anomalies in log-catches
+# delta=as.matrix(log(obs)-log(pred))
+# delta[is.finite(delta)==FALSE]=NA
+# # Residuals by Age
+# boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
+# abline(0,0,lty=2,col='red')
+# # Residuals by Year
+# boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
+# abline(0,0,lty=2,col='red')
+# # Bubble-plot by Age*Year
+# Xpos=rep(1,length(YearSpan))%*%t(2:15)
+# Ypos=YearSpan%*%t(rep(1,14))
+# plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
+# points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 
 # Statistical distributions of residuals
 library(gamlss)
 par(mfrow=c(3,2))
 histDist((Demersal.obs-Demersal.pred),'NO',nbins=25,main='Demersal Catches')
 histDist((Pelagic.obs-Pelagic.pred),'NO',nbins=10,main='Pelagic Catches')
-histDist((Winter.obs-Winter.pred),'NO',nbins=25,main='Winter Survey')
-histDist((Ecosystem.obs-Ecosystem.pred),'NO',nbins=25,main='Ecosystem Survey')
-histDist((Russian.obs-Russian.pred),'NO',nbins=25,main='Russian Groundfish Survey')
+
+for (i in 1:length(surveys)){
+  histDist((obs.vec[[i]]-pred.vec[[i]]),'NO',nbins=25,main=paste(surveys[i],"survey"))
+}
+#histDist((Winter.obs-Winter.pred),'NO',nbins=25,main='Winter Survey')
+#histDist((Ecosystem.obs-Ecosystem.pred),'NO',nbins=25,main='Ecosystem Survey')
+#histDist((Russian.obs-Russian.pred),'NO',nbins=25,main='Russian Groundfish Survey')
 
 par(mfrow=c(3,2))
 qqnorm((Demersal.obs-Demersal.pred),main='Demersal Catches')
 qqnorm((Pelagic.obs-Pelagic.pred),main='Pelagic Catches')
-qqnorm((Winter.obs-Winter.pred),main='Winter Survey')
-qqnorm((Ecosystem.obs-Ecosystem.pred),main='Ecosystem Survey')
-qqnorm((Russian.obs-Russian.pred),main='Russian Groundfish Survey')
+
+for (i in 1:length(surveys)){
+  qqnorm((obs.vec[[i]]-pred.vec[[i]]),main=paste(surveys[i],"survey"))
+}
+
+#qqnorm((Winter.obs-Winter.pred),main='Winter Survey')
+#qqnorm((Ecosystem.obs-Ecosystem.pred),main='Ecosystem Survey')
+#qqnorm((Russian.obs-Russian.pred),main='Russian Groundfish Survey')
 
 #dev.off()
 

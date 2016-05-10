@@ -18,8 +18,13 @@ graphics.off()                              # clear graphical windows
 
 ## OPTIONS
 YearSpan=1992:2015                          # set the range of year over which the model is run
-REswitch=0                                  # Switch for running the model with random effects on the recruits (NA1)
+REswitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
                                             # 0=fixed effects, 1=random effects
+## Which surveys to include
+surveys <- c("Winter","Ecosystem","Russian")
+#surveys <- c("Ecosystem","Russian")
+
+
 ## Working Directory
 #setwd("~/Documents/Work/Redfish/ICES/AFWG2016/mentella/SCA_mentella_TMB_2016/CurrentVersion") #<- to be adjusted to individual machines
 

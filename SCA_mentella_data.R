@@ -91,61 +91,129 @@ MaturityAtAge=MaturityAtAge[,4:21]
 #####################
 ## SURVEY DATA     ##
 #####################
-## Loading survey data files
-Winter=read.table("WinterSurvey.txt",header=TRUE) # survey indices 1992-2010 for ages 2-15 (YC: 1977-2008)
-# selection of data within the year span
-Winter=subset(Winter,Year%in%YearSpan)
 
-Ecosystem=read.table("EcosystemSurvey.txt",header=TRUE) # survey indices 1996-2009 for ages 2-15 (YC: 1981-2007)
-# selection of data within the year span
-Ecosystem=subset(Ecosystem,Year%in%YearSpan)
+logQSurveyInit <- NULL
+logQSurveyMap <- NULL
 
-Russian=read.table("RussianSurvey.txt",header=TRUE) # Year-class indices 1974-2008
-# preparation of Russian groundfish survey data
-Russian2=matrix(nrow=dim(Russian)[1],ncol=dim(Russian)[2])
-StartAge=2
-Russian2[,1]=Russian[,1]+StartAge
-for (age in 2:dim(Russian)[2])
-{
-  Russian2[(age-1):dim(Russian)[1],age]=Russian[1:(dim(Russian)[1]-age+2),age]
+X <- NULL
+SurveyTime <- NULL
+pa0Init <- NULL
+logb1Init <- NULL
+logb2Init <- NULL
+logb1Map <- NULL
+logb2Map <- NULL
+
+lowerAgeBoundary <- NULL
+upperAgeBoundary <- NULL
+
+if("Winter"%in%surveys){
+  ## Loading survey data files
+  Winter=read.table("WinterSurvey.txt",header=TRUE) # survey indices 1992-2010 for ages 2-15 (YC: 1977-2008)
+  # selection of data within the year span
+
+  Winter=subset(Winter,Year%in%YearSpan)
+
+  ## Reshaping data into a 5 column vector with
+  ## Year, Age, Survey, Gear selectivity, Survey Index
+  
+  Year=rep(Winter$Year,dim(Winter)[2]-1)
+  #Age=as.vector(rep(1,dim(Winter)[1])%*%t(2:15))
+  Age<-rep(2:15,each = dim(Winter)[1])
+  Survey=rep(1,dim(Winter)[1]*(dim(Winter)[2]-1))
+  Index=as.numeric(as.matrix(Winter[,2:15]))
+  
+  X=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
+  #Xa=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
+  SurveyTime <- append(SurveyTime,0.12)
+  logQSurveyInit <- append(logQSurveyInit,-8)
+  logQSurveyMap <- append(logQSurveyMap,1)
+  
+  pa0Init <- append(pa0Init,log((7.0887-2)/(15-7.0887)))
+  
+  logb1Init <- append(logb1Init,-10)
+  logb1Map <- append(logb1Map,NA)
+  
+  logb2Init <- append(logb2Init,-2.0311)
+  logb2Map <- append(logb2Map,1)
+  
+  lowerAgeBoundary <- append(lowerAgeBoundary,2)
+  upperAgeBoundary <- append(upperAgeBoundary,13)
+  
 }
-colnames(Russian2)=colnames(Russian)
-colnames(Russian2)[1]="Year"
-Russian2=as.data.frame(Russian2)
-# selection of data within the year span
-Russian2=subset(Russian2,Year%in%YearSpan)
 
-## Reshaping data into a 5 column vector with
-## Year, Age, Survey, Gear selectivity, Survey Index
+if("Ecosystem"%in%surveys){
+  Ecosystem=read.table("EcosystemSurvey.txt",header=TRUE) # survey indices 1996-2009 for ages 2-15 (YC: 1981-2007)
+  # selection of data within the year span
+  Ecosystem=subset(Ecosystem,Year%in%YearSpan)
+  
+  ## Reshaping data into a 5 column vector with
+  ## Year, Age, Survey, Gear selectivity, Survey Index
+  Year=rep(Ecosystem$Year,dim(Ecosystem)[2]-1)
+  #Age=as.vector(rep(1,dim(Ecosystem)[1])%*%t(2:15))
+  Age=rep(2:15,each = dim(Ecosystem)[1])
+  Survey=rep(2,dim(Ecosystem)[1]*(dim(Ecosystem)[2]-1))
+  Index=as.numeric(as.matrix(Ecosystem[,2:15]))
+  
+  #Xb <- data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
+  X <- rbind(X,data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index))
+  SurveyTime <- append(SurveyTime,0.75)
+  logQSurveyInit <- append(logQSurveyInit,-8.160)
+  logQSurveyMap <- append(logQSurveyMap,NA)
+  
+  pa0Init <- append(pa0Init,log((8.5883-2)/(15-8.5883)))
+  
+  logb1Init <- append(logb1Init,-10)
+  logb1Map <- append(logb1Map,NA)
+  
+  logb2Init <- append(logb2Init,-0.97676)
+  logb2Map <- append(logb2Map,2)
+  
+  lowerAgeBoundary <- append(lowerAgeBoundary,2)
+  upperAgeBoundary <- append(upperAgeBoundary,13)
+  
+}
 
-# a. Winter
-Year=rep(Winter$Year,dim(Winter)[2]-1)
-#Age=as.vector(rep(1,dim(Winter)[1])%*%t(2:15))
-Age<-rep(2:15,each = dim(Winter)[1])
-Survey=rep(1,dim(Winter)[1]*(dim(Winter)[2]-1))
-Index=as.numeric(as.matrix(Winter[,2:15]))
+if("Russian"%in%surveys){
+  
+  Russian=read.table("RussianSurvey.txt",header=TRUE) # Year-class indices 1974-2008
+  # preparation of Russian groundfish survey data
+  Russian2=matrix(nrow=dim(Russian)[1],ncol=dim(Russian)[2])
+  StartAge=2
+  Russian2[,1]=Russian[,1]+StartAge
+  for (age in 2:dim(Russian)[2])
+  {
+    Russian2[(age-1):dim(Russian)[1],age]=Russian[1:(dim(Russian)[1]-age+2),age]
+  }
+  colnames(Russian2)=colnames(Russian)
+  colnames(Russian2)[1]="Year"
+  Russian2=as.data.frame(Russian2)
+  # selection of data within the year span
+  Russian2=subset(Russian2,Year%in%YearSpan)
+  
+  Year=rep(Russian2$Year,dim(Russian2)[2]-1)
+  #Age=as.vector(rep(1,dim(Russian2)[1])%*%t(2:15))
+  Age=rep(2:15,each = dim(Russian2)[1])
+  Survey=rep(3,dim(Russian2)[1]*(dim(Russian2)[2]-1))
+  Index=as.numeric(as.matrix(Russian2[,2:15]))
+  
+  #Xc=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
+  
+  X=rbind(X,data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index))
+  
+  SurveyTime <- append(SurveyTime,0.9)
+  logQSurveyInit <- append(logQSurveyInit,-16)
+  logQSurveyMap <- append(logQSurveyMap,2)
+  pa0Init <- append(pa0Init,log((8.0891-2)/(11-8.0891)))
+  logb1Init <- append(logb1Init,-0.15861)
+  logb1Map <- append(logb1Map,1)
+  logb2Init <- append(logb2Init,-10)
+  logb2Map <- append(logb2Map,NA)
+  
+  lowerAgeBoundary <- append(lowerAgeBoundary,2)
+  upperAgeBoundary <- append(upperAgeBoundary,9)
+}
 
-Xa=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
-
-# b. Ecosystem
-Year=rep(Ecosystem$Year,dim(Ecosystem)[2]-1)
-#Age=as.vector(rep(1,dim(Ecosystem)[1])%*%t(2:15))
-Age=rep(2:15,each = dim(Ecosystem)[1])
-Survey=rep(2,dim(Ecosystem)[1]*(dim(Ecosystem)[2]-1))
-Index=as.numeric(as.matrix(Ecosystem[,2:15]))
-
-Xb=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
-
-# c. Russian groundfish
-Year=rep(Russian2$Year,dim(Russian2)[2]-1)
-#Age=as.vector(rep(1,dim(Russian2)[1])%*%t(2:15))
-Age=rep(2:15,each = dim(Russian2)[1])
-Survey=rep(3,dim(Russian2)[1]*(dim(Russian2)[2]-1))
-Index=as.numeric(as.matrix(Russian2[,2:15]))
-
-Xc=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
-
-X=rbind(Xa,Xb,Xc) # the Ogroup survey is no longer included
+#X=rbind(Xa,Xb,Xc) # the Ogroup survey is no longer included
 
 # remove lines with zero data
 X=subset(X,Index>0)
@@ -153,7 +221,7 @@ X=subset(X,Index>0)
 X=subset(X,Year%in%YearSpan)
 
 # Survey Timing
-SurveyTime=c(0.12,0.75,0.9)
+#SurveyTime=c(0.12,0.75,0.9)
 
 ####################################
 ## EXPORT DATA  TO BE USED IN TMB ##
@@ -183,10 +251,20 @@ data$nAgesInCatch=length(data$minAgeInCatch:data$maxAgeInCatch)
 data$nAges=length(data$minAge:data$maxAge)
 data$nSurveys=length(unique(X$Survey))
 data$SurveyTime=SurveyTime
-# Additional data needed for the plots
-data$Winter=Winter
-data$Ecosystem=Ecosystem
-data$Russian2=Russian2
+data$lowerAgeBoundary = lowerAgeBoundary
+data$upperAgeBoundary = upperAgeBoundary
+data$pa0Init <- pa0Init
+data$logb1Init <- logb1Init
+data$logb2Init <- logb2Init
+# Additional data needed for the plots 
+if("Winter"%in%surveys) data$Winter=Winter
+if("Ecosystem"%in%surveys) data$Ecosystem=Ecosystem
+if("Russian"%in%surveys) data$Russian2=Russian2
+
+data$logQSurveyInit <- logQSurveyInit      #Initial value for logQSurveys
+data$logQSurveyMap <- factor(logQSurveyMap)
+data$logb1Map <- factor(logb1Map)
+data$logb2Map <- factor(logb2Map)
 
 save(data,file='SCA_mentella_data.Rdata')
 
