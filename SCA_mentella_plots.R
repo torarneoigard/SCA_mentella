@@ -90,8 +90,6 @@ for (i in 1:length(surveys)){
 #logQSurvey2=parameters$logQSurvey[2]
 #logQSurvey3=logQSurvey[2]
 
-
-
 # reformat the triangular population matrix
 logTriN <- rep.matrix[indlogTriN,1]
 logTriN.std <- rep.matrix[indlogTriN,2]

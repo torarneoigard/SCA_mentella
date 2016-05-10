@@ -9,7 +9,7 @@
 #
 # The version in the directory "~/Documents/Work/Redfish/ICES/AFWG2016/mentella/SCA_mentella_TMB_2016/Version0" reproduce the SCA outputs from the AFWG2014
 # Benjamin Planque, March-April 2015
-# Benjamin Planque, Tor Arne ??ig??rd and Alf Harbitz, February 2016
+# Benjamin Planque, Tor Arne Øigård and Alf Harbitz, February 2016
 
 load("SCA_mentella_data.RData") # load data
 YearSpan=data$minYear:data$maxYear

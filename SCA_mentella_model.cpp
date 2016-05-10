@@ -86,6 +86,7 @@ Type objective_function<Type>::operator() ()
   //Rcout << "a0Eco: " << a0Eco << "\n";
   //Rcout << "a0Russian: " << a0Russian << "\n";  
   Rcout << "a0: " << a0 << "\n";
+  
   //RE for NY1
   //Type SigmalogNY1 = exp(logSigmalogNY1);
   //vector<Type> tmplogNY1(nAges+1);     //Dummy vector initialised at age 1
