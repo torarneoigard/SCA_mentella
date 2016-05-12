@@ -132,7 +132,6 @@ if("Winter"%in%surveys){
   ## Loading survey data files
   Winter=read.table("WinterSurvey.txt",header=TRUE) # survey indices 1992-2010 for ages 2-15 (YC: 1977-2008)
   # selection of data within the year span
-
   Winter=subset(Winter,Year%in%YearSpan)
 
   ## Reshaping data into a 5 column vector with

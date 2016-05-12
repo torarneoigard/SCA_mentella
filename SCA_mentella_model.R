@@ -92,6 +92,7 @@ if(data$REswitch == 0){
   )
 }
 
+
 # obj$fn()
 # obj$gr()
 system.time(opt <- nlminb(obj$par,obj$fn,obj$gr,control = list(eval.max = 1e6,maxit = 1e6)))
