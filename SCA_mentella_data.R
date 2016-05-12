@@ -14,7 +14,7 @@
 #####################
 ## CATCH DATA      ##
 #####################
-## Total Catch in tonnes
+## Total Catch in tonnes 
 TotalCatches=read.delim('TotalCatches.txt') # total catches in tonnes as reported in ICES AFWG (Table 6.1)
 # selection of data within the year span
 TotalCatches=subset(TotalCatches,Year%in%YearSpan)
@@ -25,14 +25,32 @@ TotalCatchAtAge=read.table("CatchAtAge.txt",header=TRUE) # note that the last gr
 TotalCatchAtAge=subset(TotalCatchAtAge,Year%in%YearSpan)
 
 # reshaping into a three column vector with Year, Age, Catch in number
-TotalCatchAtAge2=matrix(nrow=prod(dim(TotalCatchAtAge)[1],dim(TotalCatchAtAge)[2]-1),ncol=3)
-StartAge=as.numeric(substr(colnames(TotalCatchAtAge)[2],2,5))
-for (age in 2:dim(TotalCatchAtAge)[2])
-{
-  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),1]=TotalCatchAtAge[,1] # Year
-  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),2]=StartAge+age-2 # Age
-  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),3]=TotalCatchAtAge[1:dim(TotalCatchAtAge)[1],age]*1000 # Numbers
-}
+# modification by Alf 20.04.2016
+
+TCA = TotalCatchAtAge                           # helping variable
+siz = dim(TCA)                                 # size of TCA, = [nrow ncol]
+ny = siz[1]                                     # no of ages
+na = siz[2]-1                                   # no or ages, first column contains years
+age1 = as.numeric(substr(colnames(TCA)[2],2,5)) # first age
+AgeSpan = age1:(age1+na-1)                      # parenthesis necessary!
+yrvec = as.matrix(rep(YearSpan,na))             # repeats yrspan na time in col.vector
+agevec = as.matrix(rep(AgeSpan,each = ny))      # repeats each age ny times in col.vector
+catchvec = array(as.matrix(TCA[,2:(na+1)]))     # makes columnvector of catchmatrix for col3 in new table
+TotalCatchAtAge2 = cbind(yrvec,agevec,catchvec*1000) # new table
+#
+
+# The above modification replaces the following commands
+#
+#TotalCatchAtAge2=matrix(nrow=prod(dim(TotalCatchAtAge)[1],dim(TotalCatchAtAge)[2]-1),ncol=3)
+#StartAge=as.numeric(substr(colnames(TotalCatchAtAge)[2],2,5))
+#for (age in 2:dim(TotalCatchAtAge)[2])
+#{
+#  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),1]=TotalCatchAtAge[,1] # Year
+#  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),2]=StartAge+age-2 # Age
+#  TotalCatchAtAge2[((age-2)*(dim(TotalCatchAtAge)[1])+1):((age-1)*(dim(TotalCatchAtAge)[1])),3]=TotalCatchAtAge[1:dim(TotalCatchAtAge)[1],age]*1000 # Numbers
+#}
+# end of removed section due to modification
+
 colnames(TotalCatchAtAge2)=c("Year","Age","Catch.in.number")
 TotalCatchAtAge2=as.data.frame(TotalCatchAtAge2)
 # selection of data within the year span
@@ -106,6 +124,10 @@ logb2Map <- NULL
 lowerAgeBoundary <- NULL
 upperAgeBoundary <- NULL
 
+## Reshaping data into a 5 column vector with
+## Year, Age, Survey, Gear selectivity, Survey Index
+surveyCounter <- 1
+
 if("Winter"%in%surveys){
   ## Loading survey data files
   Winter=read.table("WinterSurvey.txt",header=TRUE) # survey indices 1992-2010 for ages 2-15 (YC: 1977-2008)
@@ -119,7 +141,7 @@ if("Winter"%in%surveys){
   Year=rep(Winter$Year,dim(Winter)[2]-1)
   #Age=as.vector(rep(1,dim(Winter)[1])%*%t(2:15))
   Age<-rep(2:15,each = dim(Winter)[1])
-  Survey=rep(1,dim(Winter)[1]*(dim(Winter)[2]-1))
+  Survey=rep(surveyCounter,dim(Winter)[1]*(dim(Winter)[2]-1))
   Index=as.numeric(as.matrix(Winter[,2:15]))
   
   X=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
@@ -138,7 +160,7 @@ if("Winter"%in%surveys){
   
   lowerAgeBoundary <- append(lowerAgeBoundary,2)
   upperAgeBoundary <- append(upperAgeBoundary,13)
-  
+  surveyCounter <- surveyCounter + 1
 }
 
 if("Ecosystem"%in%surveys){
@@ -151,7 +173,7 @@ if("Ecosystem"%in%surveys){
   Year=rep(Ecosystem$Year,dim(Ecosystem)[2]-1)
   #Age=as.vector(rep(1,dim(Ecosystem)[1])%*%t(2:15))
   Age=rep(2:15,each = dim(Ecosystem)[1])
-  Survey=rep(2,dim(Ecosystem)[1]*(dim(Ecosystem)[2]-1))
+  Survey=rep(surveyCounter,dim(Ecosystem)[1]*(dim(Ecosystem)[2]-1))
   Index=as.numeric(as.matrix(Ecosystem[,2:15]))
   
   #Xb <- data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
@@ -170,9 +192,9 @@ if("Ecosystem"%in%surveys){
   
   lowerAgeBoundary <- append(lowerAgeBoundary,2)
   upperAgeBoundary <- append(upperAgeBoundary,13)
+  surveyCounter <- surveyCounter + 1
   
 }
-
 
 if("Russian"%in%surveys){
   
@@ -194,7 +216,7 @@ if("Russian"%in%surveys){
   Year=rep(Russian2$Year,dim(Russian2)[2]-1)
   #Age=as.vector(rep(1,dim(Russian2)[1])%*%t(2:15))
   Age=rep(2:15,each = dim(Russian2)[1])
-  Survey=rep(3,dim(Russian2)[1]*(dim(Russian2)[2]-1))
+  Survey=rep(surveyCounter,dim(Russian2)[1]*(dim(Russian2)[2]-1))
   Index=as.numeric(as.matrix(Russian2[,2:15]))
   
   #Xc=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
@@ -212,17 +234,50 @@ if("Russian"%in%surveys){
   
   lowerAgeBoundary <- append(lowerAgeBoundary,2)
   upperAgeBoundary <- append(upperAgeBoundary,9)
+  surveyCounter <- surveyCounter + 1
+  
 }
 
-#X=rbind(Xa,Xb,Xc) # the Ogroup survey is no longer included
+if("WGIDEEPS"%in%surveys){
+  WGIDEEPS=read.table("WGIDEEPS.txt",header=TRUE) # survey indices 2008,2009,2013 for ages 7-75
+  # selection of data within the year span
+  WGIDEEPS=subset(WGIDEEPS,Year%in%YearSpan)
+  
+  Year=rep(WGIDEEPS$Year,dim(WGIDEEPS)[2]-1)
+  Age=rep(7:75,each = dim(WGIDEEPS)[1])
+  Survey=rep(surveyCounter,dim(WGIDEEPS)[1]*(dim(WGIDEEPS)[2]-1))
+  Index=as.numeric(as.matrix(WGIDEEPS[,2:70]))
+  
+  X=rbind(X,data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index))
+  
+  SurveyTime <- append(SurveyTime,0.67)
+  
+  #THESE NEED TO BE SET FOR THIS SURVEY
+  logQSurveyInit <- append(logQSurveyInit,-16)
+  logQSurveyMap <- append(logQSurveyMap,2)
+  pa0Init <- append(pa0Init,log((8.0891-2)/(11-8.0891)))
+  logb1Init <- append(logb1Init,-0.15861)
+  logb1Map <- append(logb1Map,1)
+  logb2Init <- append(logb2Init,-10)
+  logb2Map <- append(logb2Map,NA)
+  
+  lowerAgeBoundary <- append(lowerAgeBoundary,2)
+  upperAgeBoundary <- append(upperAgeBoundary,9)
+  
+  surveyCounter <- surveyCounter + 1
+  
+}
+  
+
+#X=rbind(Xa,Xb,Xc,Xd) # combining data from the different surveys
 
 # remove lines with zero data
 X=subset(X,Index>0)
 # selection of data within the year span
 X=subset(X,Year%in%YearSpan)
 
-# Survey Timing
-#SurveyTime=c(0.12,0.75,0.9)
+# Survey Timing (as fraction of the year)
+#SurveyTime=c(0.12,0.75,0.9,0.67)
 
 ####################################
 ## EXPORT DATA  TO BE USED IN TMB ##
@@ -238,7 +293,8 @@ data$maxAgeInCatch=max(CatchAtAge2$Age)
 data$minAgeInSurvey=min(X$Age)
 data$maxAgeInSurvey=max(X$Age)
 data$minAge=min(data$minAgeInCatch,data$minAgeInSurvey)
-data$maxAge=max(data$maxAgeInCatch,data$maxAgeInSurvey)
+#data$maxAge=max(data$maxAgeInCatch,data$maxAgeInSurvey) # needs revision
+data$maxAge=19 # needs revision
 data$TotalCatches=as.matrix(TotalCatches)
 data$CatchAtAge=as.matrix(CatchAtAge2)
 data$CatchNrow=dim(data$CatchAtAge)[1]
@@ -257,10 +313,11 @@ data$upperAgeBoundary = upperAgeBoundary
 data$pa0Init <- pa0Init
 data$logb1Init <- logb1Init
 data$logb2Init <- logb2Init
-# Additional data needed for the plots 
+# Additional data needed for the plots - THIS NEED TO BE MADE MORE DYNAMIC
 if("Winter"%in%surveys) data$Winter=Winter
 if("Ecosystem"%in%surveys) data$Ecosystem=Ecosystem
 if("Russian"%in%surveys) data$Russian=Russian2
+if("WGIDEEPS"%in%surveys) data$WGIDEEPS=WGIDEEPS
 
 data$logQSurveyInit <- logQSurveyInit      #Initial value for logQSurveys
 data$logQSurveyMap <- factor(logQSurveyMap)

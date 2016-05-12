@@ -31,7 +31,7 @@ ggplot(data=CatchAtAge,aes(x=Year))+
   facet_grid(Fleet~.)+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Catch,fill=Age),width=1,position='stack',colour='black')+
-  scale_fill_grey(start=0,end=1)+
+  scale_fill_discrete()+
   xlim(data$minYear-0.5,data$maxYear+0.5)+
   labs(y='Catch-at-age (millions)')
 
@@ -40,21 +40,21 @@ ggplot(data=CatchAtAge,aes(x=Year))+
   facet_grid(Fleet~.,scales='free_y')+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Catch,fill=Age),width=1,position='fill',colour='black')+
-  scale_fill_grey(start=0,end=1)+
+  scale_fill_discrete()+
   xlim(data$minYear-0.5,data$maxYear+0.5)+
   labs(y='Catch-at-age (%)')
 
 SurveyIndex=as.data.frame(data$SurveyIndex)
 SurveyIndex$Age=as.factor(SurveyIndex$Age)
 SurveyIndex$Survey=as.factor(SurveyIndex$Survey)
-library(plyr)
-SurveyIndex$Survey=mapvalues(SurveyIndex$Survey, from = c("1", "2", "3"), to = c("Winter", "Ecosystem", "Russian"))
+require(plyr)
+SurveyIndex$Survey=mapvalues(SurveyIndex$Survey, from = c("1", "2", "3","4"), to = c("Winter", "Ecosystem", "Russian","WGIDEEPS"))
 # survey indices by age, total numbers
 ggplot(data=SurveyIndex,aes(x=Year))+
   facet_grid(Survey~.,scales='free_y')+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Index,fill=Age),width=1,position='stack',colour='black')+
-  scale_fill_grey(start=0,end=1)+
+  scale_fill_discrete()+
   xlim(data$minYear-0.5,data$maxYear+0.5)
 
 # survey indices by age, proportions
@@ -62,7 +62,7 @@ ggplot(data=SurveyIndex,aes(x=Year))+
   facet_grid(Survey~.,scales='free_y')+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Index,fill=Age),width=1,position='fill',colour='black')+
-  scale_fill_grey(start=0,end=1)+
+  scale_fill_discrete()+
   xlim(data$minYear-0.5,data$maxYear+0.5)
 
 # Reshaping of Maturity and Weight-at-age data
