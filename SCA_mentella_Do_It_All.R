@@ -22,6 +22,7 @@ REswitch=1                                  # Switch for running the model with 
                                             # 0=fixed effects, 1=random effects
 ## Which surveys to include
 surveys <- c("Winter","Ecosystem","Russian")
+#surveys <- c("Winter","Ecosystem")
 #surveys <- c("Ecosystem","Russian")
 
 

@@ -48,7 +48,9 @@ SurveyIndex=as.data.frame(data$SurveyIndex)
 SurveyIndex$Age=as.factor(SurveyIndex$Age)
 SurveyIndex$Survey=as.factor(SurveyIndex$Survey)
 require(plyr)
-SurveyIndex$Survey=mapvalues(SurveyIndex$Survey, from = c("1", "2", "3","4"), to = c("Winter", "Ecosystem", "Russian","WGIDEEPS"))
+#SurveyIndex$Survey=mapvalues(SurveyIndex$Survey, from = c("1", "2", "3","4"), to = c("Winter", "Ecosystem", "Russian","WGIDEEPS"))
+SurveyIndex$Survey=mapvalues(SurveyIndex$Survey, from = as.character(1:length(surveys)), to = surveys)
+
 # survey indices by age, total numbers
 ggplot(data=SurveyIndex,aes(x=Year))+
   facet_grid(Survey~.,scales='free_y')+

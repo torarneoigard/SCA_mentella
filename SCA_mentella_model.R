@@ -97,9 +97,9 @@ if(data$REswitch == 0){
 # obj$gr()
 system.time(opt <- nlminb(obj$par,obj$fn,obj$gr,control = list(eval.max = 1e6,maxit = 1e6)))
 
-rep <- sdreport(obj)
+report <- sdreport(obj)
 R.code <- scan('SCA_mentella_model.R',what="",sep="\n")  # reads the current file and store it into the variable 'code'
 cpp.code <- scan('SCA_mentella_model.cpp',what="",sep="\n")  # reads the current file and store it into the variable 'code'
 date.flag=date()
-model=list(date.flag=date.flag,data=data,parameters=parameters,R.code=R.code,cpp.code=cpp.code,obj=obj,opt=opt,rep=rep)
+model=list(date.flag=date.flag,data=data,parameters=parameters,R.code=R.code,cpp.code=cpp.code,obj=obj,opt=opt,rep=report)
 save(model,file='SCA_mentella_model.Rdata')
