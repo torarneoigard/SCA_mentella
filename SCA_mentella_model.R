@@ -11,7 +11,8 @@
 # Benjamin Planque, March-April 2015
 # Benjamin Planque, Tor Arne Øigård and Alf Harbitz, February 2016
 
-load("SCA_mentella_data.RData") # load data
+#load("SCA_mentella_data.RData") # load data
+load(paste(getwd(),"/SCA_mentella_data.Rdata",sep = ""))
 YearSpan=data$minYear:data$maxYear
 
 parameters <- list(
