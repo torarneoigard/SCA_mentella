@@ -10,6 +10,7 @@
 # The version in the directory "~/Documents/Work/Redfish/ICES/AFWG2015/Mentella/SCAA_mentella_tmb" reproduce the SCA outputs from the AFWG2014
 # Benjamin Planque, February 2016
 
+# data preparation --------------------------------------------------------
 load('SCA_mentella_model.Rdata')            # Load model results from TMB
 data=model$data                             # extract data
 YearSpan=data$minYear:data$maxYear
@@ -101,6 +102,7 @@ logTriNmatrix.std <- (matrix(logTriN.std,nrow = (data$nYears+1),byrow = FALSE))
 #########
 pdf('SCA_mentella_plots.pdf')
 
+# Population age structure ------------------------------------------------
 # Population age structure in the last year+1 of the assessment
 PredictedNinLastYear=data.frame(Age=data$minAge:(data$maxAge+data$nYears),
                                 Npred=exp(logTriNmatrix[data$nYears+1,])/1e6,
@@ -111,7 +113,6 @@ ggplot(data=PredictedNinLastYear,aes(x=Age,y=Npred))+
   geom_bar(stat="identity",fill="gray75")+
   geom_pointrange(aes(ymin = N05, ymax = N95),colour='black',size=.5,fatten=1)+
   labs(x='Age (year)',y='Numbers (millions)',title=paste('Numbers-at-age in',data$maxYear+1))
-
 
 # Numbers-at-age in year 1
 NY1=data.frame(Age=data$minAge:data$maxAge,
@@ -149,7 +150,7 @@ ggplot(data=SSB,aes(x=Year,y=SSB))+
   labs(x='Year',y='Biomass (tonnes)',title='Spawning Stock Biomass')
 
 
-# Fishing mortalities
+# Fishing mortalities -----------------------------------------------------
 FY=data.frame(Year=data$minYear:data$maxYear,
                DemFY=exp(DemlogFY),
                DemFY05=exp(DemlogFY-2*DemlogFY.sd),
@@ -157,6 +158,7 @@ FY=data.frame(Year=data$minYear:data$maxYear,
                PelFY=exp(PellogFY),
                PelFY05=exp(PellogFY-2*PellogFY.sd),
                PelFY95=exp(PellogFY+2*PellogFY.sd))
+
 
 #quartz("",7,5)
 ggplot(data=FY,aes(x=Year))+
@@ -188,7 +190,7 @@ ggplot(data=FA,aes(x=Age))+
 
 
 
-# Survey selectivities
+# Survey selectivities ----------------------------------------------------
 # with confidence intervals
 SAdf <- list(Age=data$minAge:data$maxAge)
 SAdf.names <- c("Age")
@@ -215,25 +217,11 @@ ggplot(data=SAdf,aes(x=Age))+
   labs(x='Age (year)',y='Survey selectivity (Sa)',title='Survey selectivities-at-age')+
   lims(y=c(0,1.2))
 
-#SAold=data.frame(Age=data$minAge:data$maxAge,
-#              SAWinter=exp(logSAWinter),
-#              SAWinter05=exp(logSAWinter-2*logSAWinter.sd),
-#              SAWinter95=exp(logSAWinter+2*logSAWinter.sd),
-#              SAEco=exp(logSAEco),
-#              SAEco05=exp(logSAEco-2*logSAEco.sd),              
-#              SAEco95=exp(logSAEco+2*logSAEco.sd),              
-#              SARussian=exp(logSARussian),
-#              SARussian05=exp(logSARussian-2*logSARussian.sd),              
-#              SARussian95=exp(logSARussian+2*logSARussian.sd))
-#quartz("",7,5)
 
-
-###########################
-# Diagnostics - Residuals #
-###########################
 
 ## CATCHES
 
+# Diagnostics residuals ---------------------------------------------------
 # preliminary calculations:
 
 # Natural mortalities
@@ -284,11 +272,7 @@ DemC=exp(DemlogC)
 PelC=exp(PellogC)
 PredlogC=log(DemC+PelC)
 
-###########################
-# Diagnostics - Residuals #
-###########################
-
-##############################
+#Demersal fleet#############################
 # Catches in the demersal fleet
 
 #quartz()
@@ -321,7 +305,7 @@ plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),
      xlim=c(1.5,19.5),ylim=c(data$minYear-0.5,data$maxYear+0.5))
 points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 
-##############################
+#Pelagic fleet#############################
 # Catches in the pelagic fleet
 
 #quartz()
@@ -354,7 +338,7 @@ plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),
      xlim=c(1.5,19.5),ylim=c(data$minYear-0.5,data$maxYear+0.5))
 points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 
-##############################
+#Surveys#############################
 ## SURVEYS
 obs.vec <- list()
 pred.vec <- list()
@@ -377,7 +361,10 @@ for (i in 1:length(surveys)){
   #Winter.obs=obs.vec
   #Winter.pred=pred.vec
   
-  plot(obs.vec[[i]]~pred.vec[[i]],main=paste(surveys[i],"survey"),xlim=c(3,15),ylim=c(3,15),ylab='log(observed indices)',xlab='log(fitted indices)')
+  plot(obs.vec[[i]]~pred.vec[[i]],main=paste(surveys[i],"survey"),
+       xlim=c(min(pred.vec[[i]],na.rm=TRUE)*0.8,max(pred.vec[[i]],na.rm=TRUE)*1.2),
+       ylim=c(min(obs.vec[[i]],na.rm=TRUE)*0.8,max(obs.vec[[i]],na.rm=TRUE)*1.2),
+       ylab='log(observed indices)',xlab='log(fitted indices)')
   abline(0,1,lty=2,col='red')
   # Anomalies in log-catches
   delta=as.matrix(log(obs)-log(pred))
@@ -394,119 +381,6 @@ for (i in 1:length(surveys)){
   plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
   points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 }
-
-
-
-# ## WINTER SURVEY
-# 
-# #quartz()
-# par(mfrow=c(2,2))
-# # predicted vs observed catches
-# obs=as.matrix(data$Winter[1:length(YearSpan),2:15])
-# Lq=logQSurvey1
-# LSs=logSAWinter # log-selectivity
-# pred=obs
-# for (year in 1:length(YearSpan)){
-#   for (age in 2:15){
-#     pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
-#   }
-# }
-# valid=(obs>0)&(pred>0)
-# obs.vec=log(as.vector(obs[valid]))
-# pred.vec=log(as.vector(pred[valid]))
-# Winter.obs=obs.vec
-# Winter.pred=pred.vec
-# 
-# plot(obs.vec~pred.vec,main='Winter survey',xlim=c(3,15),ylim=c(3,15),ylab='log(observed indices)',xlab='log(fitted indices)')
-# abline(0,1,lty=2,col='red')
-# # Anomalies in log-catches
-# delta=as.matrix(log(obs)-log(pred))
-# delta[is.finite(delta)==FALSE]=NA
-# # Residuals by Age
-# boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
-# abline(0,0,lty=2,col='red')
-# # Residuals by Year
-# boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
-# abline(0,0,lty=2,col='red')
-# # Bubble-plot by Age*Year
-# Xpos=rep(1,length(YearSpan))%*%t(2:15)
-# Ypos=YearSpan%*%t(rep(1,14))
-# plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
-# points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
-# 
-# ## ECOSYSTEM SURVEY
-# 
-# #quartz()
-# par(mfrow=c(2,2))
-# # predicted vs observed catches
-# obs=as.matrix(data$Ecosystem[1:length(YearSpan),2:15])
-# Lq=logQSurvey2
-# LSs=logSAEco # log-selectivity
-# pred=obs
-# for (year in 1:length(YearSpan)){
-#   for (age in 2:15){
-#     pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
-#   }
-# }
-# valid=(obs>0)&(pred>0)
-# obs.vec=log(as.vector(obs[valid]))
-# pred.vec=log(as.vector(pred[valid]))
-# Ecosystem.obs=obs.vec
-# Ecosystem.pred=pred.vec
-# 
-# plot(obs.vec~pred.vec,main='Ecosystem survey',xlim=c(3,15),ylim=c(3,15),ylab='log(observed indices)',xlab='log(fitted indices)')
-# abline(0,1,lty=2,col='red')
-# # Anomalies in log-catches
-# delta=as.matrix(log(obs)-log(pred))
-# delta[is.finite(delta)==FALSE]=NA
-# # Residuals by Age
-# boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
-# abline(0,0,lty=2,col='red')
-# # Residuals by Year
-# boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
-# abline(0,0,lty=2,col='red')
-# # Bubble-plot by Age*Year
-# Xpos=rep(1,length(YearSpan))%*%t(2:15)
-# Ypos=YearSpan%*%t(rep(1,14))
-# plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
-# points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
-# 
-# ## RUSSIAN GROUNDFISH SURVEY
-# 
-# #quartz()
-# par(mfrow=c(2,2))
-# # predicted vs observed catches
-# obs=as.matrix(data$Russian2[1:length(YearSpan),2:15])
-# Lq=logQSurvey3
-# LSs=logSARussian # log-selectivity
-# pred=obs
-# for (year in 1:length(YearSpan)){
-#   for (age in 2:15){
-#     pred[year,age-1]=exp(Lq+LSs[age-1]+log(Abundance[year,age-1])-0.5*Z[year,age-1])
-#   }
-# }
-# valid=(obs>0)&(pred>0)
-# obs.vec=log(as.vector(obs[valid]))
-# pred.vec=log(as.vector(pred[valid]))
-# Russian.obs=obs.vec
-# Russian.pred=pred.vec
-# 
-# plot(obs.vec~pred.vec,main='Russian Groundfish survey',xlim=c(-4,4),ylim=c(-4,4),ylab='log(observed indices)',xlab='log(fitted indices)')
-# abline(0,1,lty=2,col='red')
-# # Anomalies in log-catches
-# delta=as.matrix(log(obs)-log(pred))
-# delta[is.finite(delta)==FALSE]=NA
-# # Residuals by Age
-# boxplot(delta,xlab='Age',ylab='indices residuals (log)',names=c('2','3','4','5','6','7','8','9','10','11','12','13','14','15'),main='residuals by age')
-# abline(0,0,lty=2,col='red')
-# # Residuals by Year
-# boxplot(t(delta),xlab='Year',ylab='indices residuals (log)',names=YearSpan,main='residuals by year',las=2)
-# abline(0,0,lty=2,col='red')
-# # Bubble-plot by Age*Year
-# Xpos=rep(1,length(YearSpan))%*%t(2:15)
-# Ypos=YearSpan%*%t(rep(1,14))
-# plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),xlab='Age',ylab='Year',main='residuals by age & year',xlim=c(1.5,19.5),ylim=c(min(YearSpan)-0.5,max(YearSpan)+0.5))
-# points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 
 # Statistical distributions of residuals
 library(gamlss)
@@ -582,6 +456,21 @@ SS=data.frame(Year=YearSpan,
               F19=round(F19,3))
 write.table(SS,'SCA_mentella_stock_summary.txt',row.names = FALSE,quote = FALSE,sep='\t')
 
+# Stock Summary table extended
+SSE=data.frame(Year=YearSpan,
+              Rec.age.2=round(exp(logNA1)),
+              Rec.age.2.025=round(exp(logNA1-logNA1.sd*1.96)),
+              Rec.age.2.975=round(exp(logNA1+logNA1.sd*1.96)),
+              SSB=round(exp(logSSB)),
+              SSB.025=round(exp(logSSB-logSSB.sd*1.96)),
+              SSB.975=round(exp(logSSB+logSSB.sd*1.96)),
+              TSB=round(TSB),
+              Catches.in.Tonnes=round(data$TotalCatches[,2]),
+              Catches.Pelagic=round(data$TotalCatches[,3]),
+              Catches.Other=round(data$TotalCatches[,4]),
+              F12.18=round(F12.18,3),
+              F19=round(F19,3))
+write.table(SSE,'SCA_mentella_stock_summary4graphs.txt',row.names = FALSE,quote = FALSE,sep='\t')
 
 ggplot_overlay=function(p1,p2){
   # extract gtable
@@ -654,3 +543,4 @@ p2=ggplot(data=LastYear, aes(x=Age, y=N/1e6))+
 plot.new()
 ggplot_overlay(p1,p2)
 dev.off()
+

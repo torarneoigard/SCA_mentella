@@ -38,53 +38,32 @@ Type objective_function<Type>::operator() ()
   PARAMETER(PellogVarLogC);
   PARAMETER_VECTOR(logVarLogI);
   PARAMETER_VECTOR(logQSurvey);
-  //PARAMETER(logQSurvey1);
-  //PARAMETER(logQSurvey2);
-  //PARAMETER(logQSurvey3);
   PARAMETER(Demsplus);
   PARAMETER(Pelsplus);
-  //PARAMETER(pa0Winter);
-  //PARAMETER(logb1Winter);
-  //PARAMETER(logb2Winter);
-  //PARAMETER(pa0Eco);
-  //PARAMETER(logb1Eco);
-  //PARAMETER(logb2Eco);
-  //PARAMETER(pa0Russian);
-  //PARAMETER(logb1Russian);
-  //PARAMETER(logb2Russian);
   PARAMETER_VECTOR(pa0);
   PARAMETER_VECTOR(logb1);
   PARAMETER_VECTOR(logb2);
   PARAMETER(logM2);
-  //PARAMETER(palogNY1);     // RE starts here
-  //PARAMETER(logSigmalogNY1);
-  //PARAMETER_VECTOR(ulogNY1);
-  PARAMETER(palogNA1);
+  PARAMETER(palogNA1);       // RE starts here
   PARAMETER(logSigmalogNA1);
   PARAMETER_VECTOR(ulogNA1);
-  //PARAMETER(initlogNY1A1);
   // end of parameters declaration
 
   // *** preliminary calculations, indices and log-transformed data
-  // probit transformations for bounded a50 coefficients (selectivity)
+  // probit transformations for bounded a50 coefficients (fleet selectivity)
   Type Dema50=Type(6.0)+(exp(pDema50)/(Type(1.0)+exp(pDema50)))*Type(13.0); // bounded between 6 and 19
   Type Pela50=Type(6.0)+(exp(pPela50)/(Type(1.0)+exp(pPela50)))*Type(13.0); // bounded between 6 and 19
-  //Type a0Winter=Type(2.0)+(exp(pa0Winter)/(Type(1.0)+exp(pa0Winter)))*Type(13.0); // bounded between 2 and 15
-  //Type a0Eco=Type(2.0)+(exp(pa0Eco)/(Type(1.0)+exp(pa0Eco)))*Type(13.0); // bounded between 2 and 15
-  //Type a0Russian=Type(2.0)+(exp(pa0Russian)/(Type(1.0)+exp(pa0Russian)))*Type(9.0); // bounded between 2 and 11
-  //Type alogNY1=Type(2)/(Type(1) + exp(-Type(2)*palogNY1)) - Type(1); // bounded between -1 and 1
-  Type alogNA1=Type(2)/(Type(1) + exp(-Type(2)*palogNA1)) - Type(1); // bounded between -1 and 1
-  
+  // probit transformations for bounded a50 coefficients (survey selectivity)
   vector<Type> a0(nSurveys);
   for (int i=0; i<(nSurveys); i++){
-    a0(i) = lowerAgeBoundary(i)+(exp(pa0(i))/(Type(1.0)+exp(pa0(i))))*(upperAgeBoundary(i));
+    a0(i) = lowerAgeBoundary(i)+(exp(pa0(i))/(Type(1.0)+exp(pa0(i))))*(upperAgeBoundary(i)); // bounded between lower and upper age in the data
   }
+  // probit transformations for bounded autoregressive recruitment model parameter
+  Type alogNA1=Type(2)/(Type(1) + exp(-Type(2)*palogNA1)) - Type(1); // bounded between -1 and 1
+  
   
   Rcout << "Dema50: " << Dema50 << "\n";
   Rcout << "Pela50: " << Pela50 << "\n";
-  //Rcout << "a0Winter: " << a0Winter << "\n";
-  //Rcout << "a0Eco: " << a0Eco << "\n";
-  //Rcout << "a0Russian: " << a0Russian << "\n";  
   Rcout << "a0: " << a0 << "\n";
   
   //RE for NY1
@@ -174,10 +153,10 @@ Type objective_function<Type>::operator() ()
   vector <Type> PelFA(nAges);
   vector <Type> logitPelFA(nAges);
   PelFA.setZero(); // fill in with zeroes
-  for(int a=0;a<(9-minAge);++a){              // loop on ages before 9y
+  for(int a=0;a<(7-minAge);++a){              // loop on ages before 7y
     logitPelFA(a)=-20;
   }
-  for(int a=(9-minAge); a<(nAges-1); ++a){    // loop on ages from age 9 to one before max age
+  for(int a=(7-minAge); a<(nAges-1); ++a){    // loop on ages from age 7 to one before max age
     x=(Type(a+minAge)-Pela50)/exp(Pellogw);
     Type tanhx;
     tanhx=(exp(x)-exp(-x))/(exp(x)+exp(-x));
@@ -212,25 +191,6 @@ Type objective_function<Type>::operator() ()
   F=DemF+PelF;						      // Matrix of mortality for both fleets combined
 
   // *** survey selectivities at age
-  //Type b1Winter=exp(logb1Winter);
-  //Type b1Eco=exp(logb1Eco);
-  //Type b1Russian=exp(logb1Russian);
-  //Type b2Winter=exp(logb2Winter);
-  //Type b2Eco=exp(logb2Eco);
-  //Type b2Russian=exp(logb2Russian);
-  //Type a1Winter=-b1Winter/(Type(2)*a0Winter);
-  //Type a1Eco=-b1Eco/(Type(2)*a0Eco);
-  //Type a1Russian=-b1Russian/(Type(2)*a0Russian);
-  //Type a2Winter=-b2Winter/(Type(2)*a0Winter);
-  //Type a2Eco=-b2Eco/(Type(2)*a0Eco);
-  //Type a2Russian=-b2Russian/(Type(2)*a0Russian);
-  //Type c1Winter=b1Winter*b1Winter/(Type(4)*a1Winter);
-  //Type c1Eco=b1Eco*b1Eco/(Type(4)*a1Eco);
-  //Type c1Russian=b1Russian*b1Russian/(Type(4)*a1Russian);
-  //Type c2Winter=b2Winter*b2Winter/(Type(4)*a2Winter);
-  //Type c2Eco=b2Eco*b2Eco/(Type(4)*a2Eco);
-  //Type c2Russian=b2Russian*b2Russian/(Type(4)*a2Russian);
-  
   vector<Type> a1(nSurveys);  
   vector<Type> a2(nSurveys);
   vector<Type> b1(nSurveys);
@@ -247,15 +207,8 @@ Type objective_function<Type>::operator() ()
     c2(i) = b2(i)*b2(i)/(Type(4.0)*a2(i));
   }
   
-  //Rcout << "logb2Winter" << logb2Winter << "\n";
   Rcout << "logb2" << logb2 << "\n";
-  //vector <Type> SAWinter(nAges);
-  //vector <Type> SAEco(nAges);
-  //vector <Type> SARussian(nAges);
-  //vector <Type> logSAWinter(nAges);
-  //vector <Type> logSAEco(nAges);
-  //vector <Type> logSARussian(nAges);
-  
+
   array <Type> SA(nSurveys,nAges);
   array <Type> logSA(nSurveys,nAges);
   
@@ -263,13 +216,7 @@ Type objective_function<Type>::operator() ()
   for (int i=0; i<(nSurveys); i++){
     for(int a=0; a<nAges; ++a){          // loop on ages 
       Ta=Type(a)+Type(2);
-      //SAWinter(a)=((exp(a1Winter*Ta*Ta+b1Winter*Ta+c1Winter)*(Ta<a0Winter))+(exp(a2Winter*Ta*Ta+b2Winter*Ta+c2Winter)*(Ta>=a0Winter)))*Type(0.999)+Type(0.001);// Winter survey selectivity
-      //logSAWinter(a)=log(SAWinter(a));
-      //SAEco(a)=((exp(a1Eco*Ta*Ta+b1Eco*Ta+c1Eco)*(Ta<a0Eco))+(exp(a2Eco*Ta*Ta+b2Eco*Ta+c2Eco)*(Ta>=a0Eco)))*Type(0.999)+Type(0.001);// Ecosystem survey selectivity
-      //logSAEco(a)=log(SAEco(a));
-      //SARussian(a)=((exp(a1Russian*Ta*Ta+b1Russian*Ta+c1Russian)*(Ta<a0Russian))+(exp(a2Russian*Ta*Ta+b2Russian*Ta+c2Russian)*(Ta>=a0Russian)))*Type(0.999)+Type(0.001);// Russian survey selectivity
-      //logSARussian(a)=log(SARussian(a));
-      SA(i,a) = ((exp(a1(i)*Ta*Ta+b1(i)*Ta+c1(i))*(Ta<a0(i)))+(exp(a2(i)*Ta*Ta+b2(i)*Ta+c2(i))*(Ta>=a0(i))))*Type(0.999)+Type(0.001);// Winter survey selectivity
+      SA(i,a) = ((exp(a1(i)*Ta*Ta+b1(i)*Ta+c1(i))*(Ta<a0(i)))+(exp(a2(i)*Ta*Ta+b2(i)*Ta+c2(i))*(Ta>=a0(i))))*Type(0.999)+Type(0.001);// Survey selectivities
       logSA(i,a) = log(SA(i,a));
     }
   }
@@ -281,7 +228,6 @@ Type objective_function<Type>::operator() ()
   // initial conditions (year 1 and age 1)
   array<Type> logN(nYears,nAges);
   array<Type> logTriN(nYears+1,nAges+nYears);
-  //logTriN = Type(-100000000);
   for(int a=0; a<nAges; ++a){
     logN(0,a)=logNY1(a);                    // fill in first column of logN with logNY1
     logTriN(0,a)=logNY1(a);

@@ -6,10 +6,12 @@
 
 ## LIBRARIES
 require(TMB)                                # Load TMB library
+require(plyr)                               # Load plyr library
 require(ggplot2)                            # Load ggplot2 library
 require(gtable)                             # Load gtable library
 require(reshape)                            # load the reshape library
 require(gamlss)                             # load the gamlss library
+require(grid)
 
 ## CLEAR ALL
 cat("\014")                                 # cear console
@@ -17,7 +19,7 @@ rm(list=ls())                               # clear workspace
 graphics.off()                              # clear graphical windows
 
 ## OPTIONS
-YearSpan=1992:2015                          # set the range of year over which the model is run
+YearSpan=1992:2016                          # set the range of year over which the model is run
 REswitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
                                             # 0=fixed effects, 1=random effects
 ## Which surveys to include
@@ -48,3 +50,8 @@ source('./SCA_mentella_model.R')
 ## MODEL PLOTS     ##
 #####################
 source('./SCA_mentella_plots.R',print.eval = TRUE)
+
+#####################
+## PROJECTION TABLE##
+#####################
+source('./SCA_mentella_projections.R',print.eval = TRUE)

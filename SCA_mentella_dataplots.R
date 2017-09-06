@@ -4,6 +4,7 @@
 #
 # Benjamin Planque, April 2016
 
+graphics.off()
 load('SCA_mentella_data.Rdata')            # load model results
 YearSpan=data$minYear:data$maxYear          # extract year span
 
@@ -27,11 +28,14 @@ CatchAtAge$Age=as.factor(CatchAtAge$Age)
 CatchAtAge$Fleet=as.factor(CatchAtAge$Fleet)
 
 # catch-at-age total numbers
+nages=nlevels(CatchAtAge$Age)
+CatchAtAge$Age=factor(CatchAtAge$Age,levels=levels(CatchAtAge$Age)[nages:1])
 ggplot(data=CatchAtAge,aes(x=Year))+
   facet_grid(Fleet~.)+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Catch,fill=Age),width=1,position='stack',colour='black')+
-  scale_fill_discrete()+
+  #scale_fill_discrete()+
+  scale_fill_grey(start = 1, end = 0.25)+
   xlim(data$minYear-0.5,data$maxYear+0.5)+
   labs(y='Catch-at-age (millions)')
 
@@ -40,23 +44,27 @@ ggplot(data=CatchAtAge,aes(x=Year))+
   facet_grid(Fleet~.,scales='free_y')+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Catch,fill=Age),width=1,position='fill',colour='black')+
-  scale_fill_discrete()+
+  #scale_fill_discrete()+
+  scale_fill_grey(start = 1, end = 0.25)+
   xlim(data$minYear-0.5,data$maxYear+0.5)+
   labs(y='Catch-at-age (%)')
 
 SurveyIndex=as.data.frame(data$SurveyIndex)
 SurveyIndex$Age=as.factor(SurveyIndex$Age)
 SurveyIndex$Survey=as.factor(SurveyIndex$Survey)
-require(plyr)
+
 #SurveyIndex$Survey=mapvalues(SurveyIndex$Survey, from = c("1", "2", "3","4"), to = c("Winter", "Ecosystem", "Russian","WGIDEEPS"))
 SurveyIndex$Survey=mapvalues(SurveyIndex$Survey, from = as.character(1:length(surveys)), to = surveys)
 
 # survey indices by age, total numbers
+nages=nlevels(SurveyIndex$Age)
+SurveyIndex$Age=factor(SurveyIndex$Age,levels=levels(SurveyIndex$Age)[nages:1])
 ggplot(data=SurveyIndex,aes(x=Year))+
   facet_grid(Survey~.,scales='free_y')+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Index,fill=Age),width=1,position='stack',colour='black')+
-  scale_fill_discrete()+
+  #scale_fill_discrete()+
+  scale_fill_grey(start = 1, end = 0.25)+
   xlim(data$minYear-0.5,data$maxYear+0.5)
 
 # survey indices by age, proportions
@@ -64,7 +72,8 @@ ggplot(data=SurveyIndex,aes(x=Year))+
   facet_grid(Survey~.,scales='free_y')+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Index,fill=Age),width=1,position='fill',colour='black')+
-  scale_fill_discrete()+
+  #scale_fill_discrete()+
+  scale_fill_grey(start = 1, end = 0.25)+
   xlim(data$minYear-0.5,data$maxYear+0.5)
 
 # Reshaping of Maturity and Weight-at-age data

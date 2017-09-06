@@ -91,7 +91,7 @@ CatchAtAge2=subset(CatchAtAge,Total>0)
 ## WEIGHT DATA     ##
 #####################
 ## Loading weight data
-WeightAtAge=read.table("WeightAtAgeInCatch.txt",header=TRUE) # note that the last group is a +group
+WeightAtAge=read.table("WeightAtAge.txt",header=TRUE) # note that the last group is a +group
 # selection of data within the year span
 WeightAtAge=subset(WeightAtAge,Year%in%YearSpan)
 # selection of ages 2 to 19+
@@ -312,6 +312,7 @@ data$upperAgeBoundary = upperAgeBoundary
 data$pa0Init <- pa0Init
 data$logb1Init <- logb1Init
 data$logb2Init <- logb2Init
+
 # Additional data needed for the plots - THIS NEED TO BE MADE MORE DYNAMIC
 if("Winter"%in%surveys) data$Winter=Winter
 if("Ecosystem"%in%surveys) data$Ecosystem=Ecosystem
