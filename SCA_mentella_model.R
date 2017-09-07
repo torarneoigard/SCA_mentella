@@ -17,7 +17,7 @@ YearSpan=data$minYear:data$maxYear
 
 parameters <- list(
   logNY1=rep(17.1,data$nAges),    # log-numbers in year 1 (for all ages) 
-  logNA1=rep(18.2,(data$nYears-1)), # log-numbers at age one (for all years except the first one) <- only to be used with the fixed effects model
+  logNA1fe=rep(18.2,(data$nYears-1)), # log-numbers at age one (for all years except the first one) <- only to be used with the fixed effects model
   DemlogFY=rep(-4,data$nYears),   # partial log-Mortality by year for the Demersal Fleet (separable mortality)
   PellogFY=c(rep(-1e6,14),rep(-4,data$nYears-14)),  # partial log-Mortality by year for the Pelagic Fleet (separable mortality)
   pDema50=0,                      # Demersal fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
@@ -69,7 +69,7 @@ if(data$REswitch == 0){
     logb1 = data$logb1Map,
     logb2 = data$logb2Map,
     logM2=factor(NA),                         # Natural mortality is fixed
-    logNA1=factor(rep(NA,(data$nYears-1))))   # Fixed effect is not estimated 
+    logNA1fe=factor(rep(NA,(data$nYears-1))))   # Fixed effect is not estimated 
   )
 }
 

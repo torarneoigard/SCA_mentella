@@ -27,7 +27,7 @@ Type objective_function<Type>::operator() ()
   // *** parameters declaration
   // dimensions and initial values of parameters are set in R
   PARAMETER_VECTOR(logNY1); // numbers of fish in year 1 (1992)
-  PARAMETER_VECTOR(logNA1); // numbers of fish at age 1 (2y old)
+  PARAMETER_VECTOR(logNA1fe); // numbers of fish at age 1 (2y old), fixed effects model
   PARAMETER_VECTOR(DemlogFY); // Log of the demersal fleet fishing mortality
   PARAMETER_VECTOR(PellogFY); // Log of the pelagic fleet fishing mortality
   PARAMETER(pDema50); // probit of the 'a50' parameter for demersal fleet selectivity 
@@ -231,8 +231,8 @@ Type objective_function<Type>::operator() ()
  
   for(int y=1; y<nYears; ++y){  // loop on years, i.e. rows (start on second year)
     if(REswitch < 1){ // fixed effects on recruits
-      logN(y,0)=logNA1(y-1);// fill in first column of logN with logNA1
-      logTriN(y,0)=logNA1(y-1);// fill in first column of logN with logNA1
+      logN(y,0)=logNA1fe(y-1);// fill in first column of logN with logNA1
+      logTriN(y,0)=logNA1fe(y-1);// fill in first column of logN with logNA1
     }
     if(REswitch > 0){ // random effects on recruits
       logN(y,0)=logNA1re(y-1);// fill in first line of logN with logNA1
@@ -342,15 +342,18 @@ Type objective_function<Type>::operator() ()
   }
 
   // *** addtional outputs
-  vector<Type> NY1(nAges); // first age
+  vector<Type> NY1(nAges); // age distribution in the first year
   NY1=exp(logNY1);
-  vector<Type> NA1(nYears-1); // first year
+  vector<Type> NA1(nYears-1); // recruitment (number at age 2y) across years
+  vector<Type> logNA1(nYears-1); // log-recruitment (number at age 2y) across years
   if(REswitch < 1){
-    NA1=exp(logNA1);
+    logNA1=logNA1fe;
   }
   if(REswitch > 0){
-    NA1=exp(logNA1re);
+    logNA1=logNA1re;
   }
+  NA1=exp(logNA1);
+  
   vector<Type> RecAge6(nYears); // recruitment at age 6
   for (int y=0; y<nYears; ++y){
     RecAge6(y)=exp(logN(y,6));
@@ -362,15 +365,15 @@ Type objective_function<Type>::operator() ()
   ADREPORT(PredTotalCatches); // report total catches in tonnes
   //ADREPORT(logNY1);
   //ADREPORT(NY1);
-  //ADREPORT(logNA1);
+  ADREPORT(logNA1);
   //ADREPORT(NA1);
   ADREPORT(RecAge6);
   //ADREPORT(PelFY);
   //ADREPORT(DemFY);
   //ADREPORT(PelFA);
   //ADREPORT(DemFA);
-  //ADREPORT(logitDemFA);// can be removed?
-  //ADREPORT(logitPelFA);// can be removed?
+  ADREPORT(logitDemFA);
+  ADREPORT(logitPelFA);
   ADREPORT(SA);
   ADREPORT(logSA);
   ADREPORT(M2);

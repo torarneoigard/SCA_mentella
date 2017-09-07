@@ -8,7 +8,7 @@
 # the file SCA_mentella_plots.R is plotting the results
 #
 # The version in the directory "~/Documents/Work/Redfish/ICES/AFWG2015/Mentella/SCAA_mentella_tmb" reproduce the SCA outputs from the AFWG2014
-# Benjamin Planque, February 2016
+# Benjamin Planque, February 2016, September 2017
 
 # data preparation --------------------------------------------------------
 load('SCA_mentella_model.Rdata')            # Load model results from TMB
@@ -19,26 +19,15 @@ parameters=model$parameters                 # and parameters
 rep.matrix <- summary(model$rep)            # get the list of reported values and standard deviations
 rep.rnames <- rownames(rep.matrix)          # get the names of variables
 indlogNY1 <- which(rep.rnames=="logNY1")    # extract line numbers for numbers in year one
-if(data$REswitch == 0){
 indlogNA1 <- which(rep.rnames=="logNA1")    # extract line numbers for numbers at age one
-} else {
-  indlogNA1 <- which(rep.rnames == "logNA1re")
-}
 indDemlogFY <- which(rep.rnames=="DemlogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
 indPellogFY <- which(rep.rnames=="PellogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
 indlogitDemFA <- which(rep.rnames=="logitDemFA") # extract line numbers for demersal fishing mortality in years (Fy's)
 indlogitPelFA <- which(rep.rnames=="logitPelFA") # extract line numbers for demersal fishing mortality in years (Fy's)
-#indSAWinter <- which(rep.rnames=="SAWinter") # extract line numbers for winter survey selectivity at age
-#indSAEco <- which(rep.rnames=="SAEco") # extract line numbers for ecosystem survey selectivity at age
-#indSARussian <- which(rep.rnames=="SARussian") # extract line numbers for Russian groundfish survey selectivity at age
 indSA <- which(rep.rnames=="SA")
-#indlogSAWinter <- which(rep.rnames=="logSAWinter") # extract line numbers for winter survey selectivity at age
-#indlogSAEco <- which(rep.rnames=="logSAEco") # extract line numbers for ecosystem survey selectivity at age
-#indlogSARussian <- which(rep.rnames=="logSARussian") # extract line numbers for Russian groundfish survey selectivity at age
 indlogSA <- which(rep.rnames=="logSA")
 indlogSSB <- which(rep.rnames=="logSSB")    # extract line numbers for SSB
 indlogTriN <- which(rep.rnames=="logTriN")  # extract line numbers for triangular population matrix
-
 
 # output vectors for plotting
 logNY1 <- rep.matrix[indlogNY1,1]
@@ -54,26 +43,11 @@ logitPelFA <-  rep.matrix[indlogitPelFA,1]
 logitDemFA.sd <-  rep.matrix[indlogitDemFA,2]
 logitPelFA.sd <-  rep.matrix[indlogitPelFA,2]
 SA <- matrix(rep.matrix[indSA,1],nrow = length(surveys),byrow = FALSE)
-#SAWinter <- rep.matrix[indSAWinter,1]
-#SAEco <- rep.matrix[indSAEco,1]
-#SARussian <- rep.matrix[indSARussian,1]
 logSA <- matrix(rep.matrix[indlogSA,1],nrow = length(surveys),byrow = FALSE)
 logSA.sd <- matrix(rep.matrix[indlogSA,2],nrow = length(surveys),byrow = FALSE)
 
-#logSAWinter <- rep.matrix[indlogSAWinter,1]
-#logSAWinter.sd <- rep.matrix[indlogSAWinter,2]
-#logSAEco <- rep.matrix[indlogSAEco,1]
-#logSAEco.sd <- rep.matrix[indlogSAEco,2]
-#logSARussian <- rep.matrix[indlogSARussian,1]
-#logSARussian.sd <- rep.matrix[indlogSARussian,2]
-
 logSSB <- rep.matrix[indlogSSB,1]
 logSSB.sd <- rep.matrix[indlogSSB,2]
-
-
-#logQSurvey1=rep.matrix[rep.rnames=="logQSurvey1",1]
-#logQSurvey2=parameters$logQSurvey2
-#logQSurvey3=rep.matrix[rep.rnames=="logQSurvey3",1]
 
 logQSurvey <- array(NA,length(surveys))
 logQSurveytemp = rep.matrix[rep.rnames=="logQSurvey",1]
@@ -87,10 +61,6 @@ for (i in 1:length(surveys)){
   } 
 }
 
-#logQSurvey1=logQSurvey[1]
-#logQSurvey2=parameters$logQSurvey[2]
-#logQSurvey3=logQSurvey[2]
-
 # reformat the triangular population matrix
 logTriN <- rep.matrix[indlogTriN,1]
 logTriN.std <- rep.matrix[indlogTriN,2]
@@ -100,7 +70,8 @@ logTriNmatrix.std <- (matrix(logTriN.std,nrow = (data$nYears+1),byrow = FALSE))
 #########
 # PLOTS #
 #########
-pdf('SCA_mentella_plots.pdf')
+pdf.filename=paste('SCA_mentella_plots',model$date.flag,'.pdf',sep="")
+#pdf(pdf.filename)
 
 # Population age structure ------------------------------------------------
 # Population age structure in the last year+1 of the assessment
@@ -109,10 +80,10 @@ PredictedNinLastYear=data.frame(Age=data$minAge:(data$maxAge+data$nYears),
                                 N05=exp(logTriNmatrix[data$nYears+1,]-2*logTriNmatrix.std[data$nYears+1,])/1e6,
                                 N95=exp(logTriNmatrix[data$nYears+1,]+2*logTriNmatrix.std[data$nYears+1,])/1e6)
 #quartz("",7,5)
-ggplot(data=PredictedNinLastYear,aes(x=Age,y=Npred))+
+print(ggplot(data=PredictedNinLastYear,aes(x=Age,y=Npred))+
   geom_bar(stat="identity",fill="gray75")+
   geom_pointrange(aes(ymin = N05, ymax = N95),colour='black',size=.5,fatten=1)+
-  labs(x='Age (year)',y='Numbers (millions)',title=paste('Numbers-at-age in',data$maxYear+1))
+  labs(x='Age (year)',y='Numbers (millions)',title=paste('Numbers-at-age in',data$maxYear+1)))
 
 # Numbers-at-age in year 1
 NY1=data.frame(Age=data$minAge:data$maxAge,
@@ -120,10 +91,10 @@ NY1=data.frame(Age=data$minAge:data$maxAge,
                N05=exp(logNY1-2*logNY1.sd)/1e6,
                N95=exp(logNY1+2*logNY1.sd)/1e6)
 #quartz("",7,5)
-ggplot(data=NY1,aes(x=Age,y=NY1))+
+print(ggplot(data=NY1,aes(x=Age,y=NY1))+
   geom_bar(stat="identity",fill="gray80")+
   geom_pointrange(aes(ymin = N05, ymax = N95),colour='black',size=.5,fatten=0.1)+
-  labs(x='Age (year)',y='Numbers (millions)',title=paste('Numbers-at-age in',data$minYear))
+  labs(x='Age (year)',y='Numbers (millions)',title=paste('Numbers-at-age in',data$minYear)))
 
 
 # Numbers-at-age 1 (2y old)
@@ -132,10 +103,10 @@ NA1=data.frame(Year=data$minYear:data$maxYear,
                N05=exp(logNA1-2*logNA1.sd)/1e6,
                N95=exp(logNA1+2*logNA1.sd)/1e6)
 #quartz("",7,5)
-ggplot(data=NA1,aes(x=Year,y=NA1))+
+print(ggplot(data=NA1,aes(x=Year,y=NA1))+
   geom_bar(stat="identity",fill="gray80")+
   geom_pointrange(aes(ymin = N05, ymax = N95),colour='black',size=.5,fatten=0.1)+
-  labs(x='Year',y='Numbers (millions)',title='Numbers of 2y old')
+  labs(x='Year',y='Numbers (millions)',title='Numbers of 2y old'))
 
 
 # SSB
@@ -144,10 +115,10 @@ SSB=data.frame(Year=data$minYear:data$maxYear,
                SSB05=exp(logSSB-2*logSSB.sd)/1e3,
                SSB95=exp(logSSB+2*logSSB.sd)/1e3)
 #quartz("",7,5)
-ggplot(data=SSB,aes(x=Year,y=SSB))+
+print(ggplot(data=SSB,aes(x=Year,y=SSB))+
   geom_bar(stat="identity",fill="gray80")+
   geom_pointrange(aes(ymin = SSB05, ymax = SSB95),colour='black',size=.5,fatten=0.1)+
-  labs(x='Year',y='Biomass (tonnes)',title='Spawning Stock Biomass')
+  labs(x='Year',y='Biomass (tonnes)',title='Spawning Stock Biomass'))
 
 
 # Fishing mortalities -----------------------------------------------------
@@ -161,12 +132,12 @@ FY=data.frame(Year=data$minYear:data$maxYear,
 
 
 #quartz("",7,5)
-ggplot(data=FY,aes(x=Year))+
+print(ggplot(data=FY,aes(x=Year))+
   geom_line(aes(y=DemFY))+
   geom_ribbon(aes(y = DemFY,ymin = DemFY05, ymax = DemFY95),fill='lightblue',alpha=0.5)+
   geom_line(aes(y=PelFY),colour='red')+
   geom_ribbon(aes(y = PelFY,ymin = PelFY05, ymax = PelFY95),fill='lightpink',alpha=0.5)+
-  labs(x='Year',y='Fishing mortality (Fys)',title='Annual fishing mortality')
+  labs(x='Year',y='Fishing mortality (Fys)',title='Annual fishing mortality'))
 
 
 # Fishing selectivities
@@ -179,15 +150,13 @@ FA=data.frame(Age=data$minAge:data$maxAge,
               PelFA95=exp(logitPelFA+2*logitPelFA.sd)/(1+exp(logitPelFA+2*logitPelFA.sd))
               )
 #quartz("",7,5)
-ggplot(data=FA,aes(x=Age))+
+print(ggplot(data=FA,aes(x=Age))+
   geom_line(aes(y=DemFA),colour='blue')+
   geom_ribbon(aes(y = DemFA,ymin = DemFA05, ymax = DemFA95),fill='lightblue',alpha=0.5)+
   geom_line(aes(y=PelFA),colour='red')+
   geom_ribbon(aes(y = PelFA,ymin = PelFA05, ymax = PelFA95),fill='lightpink',alpha=0.5)+
   labs(x='Age (year)',y='Fleet selectivity (Sa)',title='Fleet selectivities-at-age')+
-  lims(y=c(0,1))
-
-
+  lims(y=c(0,1)))
 
 
 # Survey selectivities ----------------------------------------------------
