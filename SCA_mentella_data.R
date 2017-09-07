@@ -126,6 +126,11 @@ upperAgeBoundary <- NULL
 
 ## Reshaping data into a 5 column vector with
 ## Year, Age, Survey, Gear selectivity, Survey Index
+
+#---------------------
+#Survey index numbers
+#---------------------
+
 surveyCounter <- 1
 
 if("Winter"%in%surveys){
@@ -143,7 +148,9 @@ if("Winter"%in%surveys){
   Survey=rep(surveyCounter,dim(Winter)[1]*(dim(Winter)[2]-1))
   Index=as.numeric(as.matrix(Winter[,2:15]))
   
-  X=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
+  #X=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
+  X <- rbind(X,data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index))
+  
   #Xa=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
   SurveyTime <- append(SurveyTime,0.12)
   logQSurveyInit <- append(logQSurveyInit,-8)
@@ -237,37 +244,60 @@ if("Russian"%in%surveys){
   
 }
 
-if("WGIDEEPS"%in%surveys){
-  WGIDEEPS=read.table("WGIDEEPS.txt",header=TRUE) # survey indices 2008,2009,2013 for ages 7-75
-  # selection of data within the year span
-  WGIDEEPS=subset(WGIDEEPS,Year%in%YearSpan)
+#--------------------------
+#Survey index proportions
+#--------------------------
+
+if(length(surveysProp)>0){
+  XProp <- NULL
+  surveyCounterProp <- 1
   
-  Year=rep(WGIDEEPS$Year,dim(WGIDEEPS)[2]-1)
-  Age=rep(7:75,each = dim(WGIDEEPS)[1])
-  Survey=rep(surveyCounter,dim(WGIDEEPS)[1]*(dim(WGIDEEPS)[2]-1))
-  Index=as.numeric(as.matrix(WGIDEEPS[,2:70]))
   
-  X=rbind(X,data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index))
+  #logQSurveyInit <- NULL
+  #logQSurveyMap <- NULL
   
-  SurveyTime <- append(SurveyTime,0.67)
+  #SurveyTime <- NULL
+  #pa0Init <- NULL
+  #logb1Init <- NULL
+  #logb2Init <- NULL
+  #logb1Map <- NULL
+  #logb2Map <- NULL
   
-  #THESE NEED TO BE SET FOR THIS SURVEY
-  logQSurveyInit <- append(logQSurveyInit,-16)
-  logQSurveyMap <- append(logQSurveyMap,2)
-  pa0Init <- append(pa0Init,log((8.0891-2)/(11-8.0891)))
-  logb1Init <- append(logb1Init,-0.15861)
-  logb1Map <- append(logb1Map,1)
-  logb2Init <- append(logb2Init,-10)
-  logb2Map <- append(logb2Map,NA)
+  #lowerAgeBoundary <- NULL
+  #upperAgeBoundary <- NULL
   
-  lowerAgeBoundary <- append(lowerAgeBoundary,2)
-  upperAgeBoundary <- append(upperAgeBoundary,9)
   
-  surveyCounter <- surveyCounter + 1
+  if("WGIDEEPS"%in%surveysProp){
+    WGIDEEPS=read.table("WGIDEEPS.txt",header=TRUE) # survey indices 2008,2009,2013 for ages 7-75
+    # selection of data within the year span
+    WGIDEEPS=subset(WGIDEEPS,Year%in%YearSpan)
+    
+    Year=rep(WGIDEEPS$Year,dim(WGIDEEPS)[2]-1)
+    Age=rep(7:75,each = dim(WGIDEEPS)[1])
+    Survey=rep(surveyCounterProp,dim(WGIDEEPS)[1]*(dim(WGIDEEPS)[2]-1))
+    IndexProp=as.numeric(as.matrix(WGIDEEPS[,2:70]))
+    
+    XProp=rbind(XProp,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp))
+    
+    #SurveyTime <- append(SurveyTime,0.67)
+    
+    ##THESE NEED TO BE SET FOR THIS SURVEY
+    #logQSurveyInit <- append(logQSurveyInit,-16)
+    #logQSurveyMap <- append(logQSurveyMap,2)
+    #pa0Init <- append(pa0Init,log((8.0891-2)/(11-8.0891)))
+    #logb1Init <- append(logb1Init,-0.15861)
+    #logb1Map <- append(logb1Map,1)
+    #logb2Init <- append(logb2Init,-10)
+    #logb2Map <- append(logb2Map,NA)
+    
+    #lowerAgeBoundary <- append(lowerAgeBoundary,2)
+    #upperAgeBoundary <- append(upperAgeBoundary,9)
+    
+    surveyCounterProp <- surveyCounterProp + 1
+    
+  }
   
 }
-  
-
 #X=rbind(Xa,Xb,Xc,Xd) # combining data from the different surveys
 
 # remove lines with zero data
