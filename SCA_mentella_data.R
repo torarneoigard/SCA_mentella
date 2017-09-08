@@ -262,14 +262,14 @@ Age2Blocks=function(XProp,AgeBlocks,StartYear,PlusGroupInStartYear){ # recode a 
         if (AgeBlocks$maxAge[A]<PlusGroupInStartYear+Y-StartYear){ # test if the age block does not contains the +group for that year
           Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A])&(Age<=AgeBlocks$maxAge[A]))
           if(dim(Xsub)[1]>0){
-            XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) # <- problem here, this needs checking
+            XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) #
             XPropBlocks=rbind(XPropBlocks,XPB)
           }
         } else { # +group case
           if (AgeBlocks$minAge[A]<=PlusGroupInStartYear+Y-StartYear){
             Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A]))
             if(dim(Xsub)[1]>0){
-              XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) # <- problem here, this needs checking
+              XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) #
               XPropBlocks=rbind(XPropBlocks,XPB)
             }
           }
