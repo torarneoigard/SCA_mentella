@@ -12,10 +12,10 @@ pdf(file='SCA_mentella_dataplots.pdf')
 
 # total catches
 TotalCatches=as.data.frame(data$TotalCatches)
-ggplot(data=TotalCatches,aes(x=Year))+
+print(ggplot(data=TotalCatches,aes(x=Year))+
   geom_ribbon(aes(ymin=0,ymax=Catch),fill='orangered3',colour='black')+
   geom_ribbon(aes(ymin=0,ymax=Other),fill='royalblue4',colour='black')+
-  labs(y='Catch in tonnes')
+  labs(y='Catch in tonnes'))
   
 # catches-at-age
 X=as.data.frame(data$CatchAtAge)
@@ -30,24 +30,24 @@ CatchAtAge$Fleet=as.factor(CatchAtAge$Fleet)
 # catch-at-age total numbers
 nages=nlevels(CatchAtAge$Age)
 CatchAtAge$Age=factor(CatchAtAge$Age,levels=levels(CatchAtAge$Age)[nages:1])
-ggplot(data=CatchAtAge,aes(x=Year))+
+print(ggplot(data=CatchAtAge,aes(x=Year))+
   facet_grid(Fleet~.)+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Catch,fill=Age),width=1,position='stack',colour='black')+
   #scale_fill_discrete()+
   scale_fill_grey(start = 1, end = 0.25)+
   xlim(data$minYear-0.5,data$maxYear+0.5)+
-  labs(y='Catch-at-age (millions)')
+  labs(y='Catch-at-age (millions)'))
 
 # catch-at-age proportions
-ggplot(data=CatchAtAge,aes(x=Year))+
+print(ggplot(data=CatchAtAge,aes(x=Year))+
   facet_grid(Fleet~.,scales='free_y')+
   theme(panel.grid=element_blank())+
   geom_bar(stat='identity',aes(y=Catch,fill=Age),width=1,position='fill',colour='black')+
   #scale_fill_discrete()+
   scale_fill_grey(start = 1, end = 0.25)+
   xlim(data$minYear-0.5,data$maxYear+0.5)+
-  labs(y='Catch-at-age (%)')
+  labs(y='Catch-at-age (%)'))
 
 SurveyIndex=as.data.frame(data$SurveyIndex)
 SurveyIndex$Age=as.factor(SurveyIndex$Age)

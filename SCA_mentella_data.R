@@ -98,7 +98,7 @@ WeightAtAge=subset(WeightAtAge,Year%in%YearSpan)
 WeightAtAge=WeightAtAge[,4:21]
 
 #####################
-## MATURITYT DATA  ##
+## MATURITY DATA  ##
 #####################
 ## Loading maturity data
 MaturityAtAge=read.table("MaturityAtAge.txt",header=TRUE) # note that the last group is a +group
@@ -106,6 +106,7 @@ MaturityAtAge=read.table("MaturityAtAge.txt",header=TRUE) # note that the last g
 MaturityAtAge=subset(MaturityAtAge,Year%in%YearSpan)
 # selection of ages 2 to 19+
 MaturityAtAge=MaturityAtAge[,4:21]
+
 #####################
 ## SURVEY DATA     ##
 #####################
@@ -245,26 +246,43 @@ if("Russian"%in%surveys){
 }
 
 #--------------------------
-#Survey index proportions
+#Survey index in proportions
 #--------------------------
+Age2Blocks=function(XProp,AgeBlocks,StartYear,PlusGroupInStartYear){ # recode a dataset by age in years into a dataset by age in age blocks
+  # Xprop is the original table with data by age
+  # AgeBlocks is the table that contains the definition of the age blocks to use
+  # StartYear is the first year to run the model (1992)
+  # PlusGroupInStartYear is what is says (19y)
+  Years=unique(XProp$Year)
+  Surveys=unique(XProp$Survey) 
+  XPropBlocks={}
+  for (S in Surveys){ # loop on surveys
+    for (Y in Years){ # loop on Years
+      for (A in AgeBlocks[,1]){ # loop on Age blocks
+        if (AgeBlocks$maxAge[A]<PlusGroupInStartYear+Y-StartYear){ # test if the age block does not contains the +group for that year
+          Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A])&(Age<=AgeBlocks$maxAge[A]))
+          if(dim(Xsub)[1]>0){
+            XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) # <- problem here, this needs checking
+            XPropBlocks=rbind(XPropBlocks,XPB)
+          }
+        } else { # +group case
+          if (AgeBlocks$minAge[A]<=PlusGroupInStartYear+Y-StartYear){
+            Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A]))
+            if(dim(Xsub)[1]>0){
+              XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) # <- problem here, this needs checking
+              XPropBlocks=rbind(XPropBlocks,XPB)
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
 if(length(surveysProp)>0){
   XProp <- NULL
   surveyCounterProp <- 1
-  
-  
-  #logQSurveyInit <- NULL
-  #logQSurveyMap <- NULL
-  
-  #SurveyTime <- NULL
-  #pa0Init <- NULL
-  #logb1Init <- NULL
-  #logb2Init <- NULL
-  #logb1Map <- NULL
-  #logb2Map <- NULL
-  
-  #lowerAgeBoundary <- NULL
-  #upperAgeBoundary <- NULL
+  AgeBlocks=read.table(file='AgeBlocks.txt',sep='\t',header=TRUE)
   
   
   if("WGIDEEPS"%in%surveysProp){
@@ -277,7 +295,10 @@ if(length(surveysProp)>0){
     Survey=rep(surveyCounterProp,dim(WGIDEEPS)[1]*(dim(WGIDEEPS)[2]-1))
     IndexProp=as.numeric(as.matrix(WGIDEEPS[,2:70]))
     
-    XProp=rbind(XProp,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp))
+    XProp=rbind(XProp,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp)) # construct a table with each individual observation as a line
+    
+    XpropBlocks=Age2Blocks(Xprop,AgeBlocks,YearSpan[1],19) # construct the same table but with AgeBlocks instead of Ages in years
+    
     
     #SurveyTime <- append(SurveyTime,0.67)
     
@@ -296,7 +317,8 @@ if(length(surveysProp)>0){
     surveyCounterProp <- surveyCounterProp + 1
     
   }
-  
+  data$SurveyProps=as.matrix(XpropBlocks)
+  data$AgeBlocks=AgeBlocks
 }
 #X=rbind(Xa,Xb,Xc,Xd) # combining data from the different surveys
 
