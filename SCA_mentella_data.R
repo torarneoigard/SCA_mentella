@@ -10,7 +10,7 @@
 # The version in the directory "~/Documents/Work/Redfish/ICES/AFWG2015/Mentella/SCAA_mentella_tmb" reproduce the SCA outputs from the AFWG2014
 # Benjamin Planque, March 2015, updated February 2016
 
-
+data=list() # 'data' is the object to be used by TMB
 #####################
 ## CATCH DATA      ##
 #####################
@@ -229,6 +229,7 @@ if("Russian"%in%surveys){
   #Xc=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
   
   X=rbind(X,data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index))
+  X=subset(X,Index>0) # remove lines with zeroes
   
   SurveyTime <- append(SurveyTime,0.9)
   logQSurveyInit <- append(logQSurveyInit,-16)
@@ -277,64 +278,41 @@ Age2Blocks=function(XProp,AgeBlocks,StartYear,PlusGroupInStartYear){ # recode a 
       }
     }
   }
+  XPropBlocks
 }
 
 if(length(surveysProp)>0){
+  SurveyTimeProp <- NULL
   XProp <- NULL
   surveyCounterProp <- 1
-  AgeBlocks=read.table(file='AgeBlocks.txt',sep='\t',header=TRUE)
-  
+  AgeBlocks=read.table(file='AgeBlocks.txt',sep='\t',header=TRUE) # read the Age blocks data file
   
   if("WGIDEEPS"%in%surveysProp){
     WGIDEEPS=read.table("WGIDEEPS.txt",header=TRUE) # survey indices 2008,2009,2013 for ages 7-75
     # selection of data within the year span
-    WGIDEEPS=subset(WGIDEEPS,Year%in%YearSpan)
-    
-    Year=rep(WGIDEEPS$Year,dim(WGIDEEPS)[2]-1)
+    WGIDEEPS=subset(WGIDEEPS,Year%in%YearSpan) # restrict data to year-span
+    Year=rep(WGIDEEPS$Year,dim(WGIDEEPS)[2]-1) # recode the data matrix into a 4 column table
     Age=rep(7:75,each = dim(WGIDEEPS)[1])
     Survey=rep(surveyCounterProp,dim(WGIDEEPS)[1]*(dim(WGIDEEPS)[2]-1))
     IndexProp=as.numeric(as.matrix(WGIDEEPS[,2:70]))
-    
-    XProp=rbind(XProp,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp)) # construct a table with each individual observation as a line
-    
-    XpropBlocks=Age2Blocks(Xprop,AgeBlocks,YearSpan[1],19) # construct the same table but with AgeBlocks instead of Ages in years
-    
-    
-    #SurveyTime <- append(SurveyTime,0.67)
-    
-    ##THESE NEED TO BE SET FOR THIS SURVEY
-    #logQSurveyInit <- append(logQSurveyInit,-16)
-    #logQSurveyMap <- append(logQSurveyMap,2)
-    #pa0Init <- append(pa0Init,log((8.0891-2)/(11-8.0891)))
-    #logb1Init <- append(logb1Init,-0.15861)
-    #logb1Map <- append(logb1Map,1)
-    #logb2Init <- append(logb2Init,-10)
-    #logb2Map <- append(logb2Map,NA)
-    
-    #lowerAgeBoundary <- append(lowerAgeBoundary,2)
-    #upperAgeBoundary <- append(upperAgeBoundary,9)
-    
+    XProp=rbind(XProp,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp)) 
+    XPropBlocks=Age2Blocks(XProp,AgeBlocks,YearSpan[1],19) # construct the same table but with AgeBlocks instead of Ages in years
+
+    SurveyTimeProp <- append(SurveyTimeProp,0.67)
     surveyCounterProp <- surveyCounterProp + 1
     
   }
-  data$SurveyProps=as.matrix(XpropBlocks)
+  XPropBlocks=subset(XPropBlocks,IndexProp>0) # remove lines with zero data
+  data$SurveyProps=as.matrix(XPropBlocks)
   data$AgeBlocks=AgeBlocks
+  data$SurveyTimeProp=SurveyTimeProp
+  data$nSurveysProp=length(unique(XProp$Survey))
 }
-#X=rbind(Xa,Xb,Xc,Xd) # combining data from the different surveys
-
-# remove lines with zero data
-X=subset(X,Index>0)
-# selection of data within the year span
-X=subset(X,Year%in%YearSpan)
-
-# Survey Timing (as fraction of the year)
-#SurveyTime=c(0.12,0.75,0.9,0.67)
 
 ####################################
 ## EXPORT DATA  TO BE USED IN TMB ##
 ####################################
 
-data=list()
 #data$Date=date()
 data$REswitch=REswitch
 data$minYear=YearSpan[1]
@@ -369,7 +347,7 @@ data$logb2Init <- logb2Init
 if("Winter"%in%surveys) data$Winter=Winter
 if("Ecosystem"%in%surveys) data$Ecosystem=Ecosystem
 if("Russian"%in%surveys) data$Russian=Russian2
-if("WGIDEEPS"%in%surveys) data$WGIDEEPS=WGIDEEPS
+if("WGIDEEPS"%in%surveysProp) data$WGIDEEPS=WGIDEEPS
 
 data$logQSurveyInit <- logQSurveyInit      #Initial value for logQSurveys
 data$logQSurveyMap <- factor(logQSurveyMap)

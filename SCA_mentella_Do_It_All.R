@@ -27,8 +27,8 @@ surveys <- c("Winter","Ecosystem","Russian")
 #surveys <- c("Winter","Ecosystem")
 #surveys <- c("Ecosystem","Russian")
 
-surveysProp <- NULL
-surveysProp <- c("WGIDEEP")
+#surveysProp <- NULL
+surveysProp <- c("WGIDEEPS")
 
 ## Working Directory
 #setwd("~/Documents/Work/Redfish/ICES/AFWG2016/mentella/SCA_mentella_TMB_2016/CurrentVersion") #<- to be adjusted to individual machines
