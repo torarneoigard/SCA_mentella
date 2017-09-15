@@ -15,6 +15,11 @@
 load(paste(getwd(),"/SCA_mentella_data.Rdata",sep = ""))
 YearSpan=data$minYear:data$maxYear
 
+#data$pa0PropInit
+#data$logb1PropInit
+#data$logb2PropInit
+#data$logb1PropMap
+
 parameters <- list(
   logNY1=rep(17.1,data$nAges),    # log-numbers in year 1 (for all ages) 
   logNA1fe=rep(18.2,(data$nYears-1)), # log-numbers at age one (for all years except the first one) <- only to be used with the fixed effects model
@@ -33,8 +38,11 @@ parameters <- list(
   Pelsplus=10,                    # Pelagic fleet selectivity coefficient 3 (selectivity for +group), to be switched off
   logM2=-3,					              # log of Natural mortality (should be switched off)
   pa0 = data$pa0Init,             # Survey selectivity coefficients a (probit-transformed age at which the derivative of the survey selectivity function is flat)
+  pa0Prop = data$pa0PropInit,             # Survey selectivity coefficients a (probit-transformed age at which the derivative of the survey selectivity function is flat)
   logb1 = data$logb1Init,         # Survey selectivity coefficients b1 (log-transformed upward slope of the selectivity function, for age<pa)
   logb2 = data$logb2Init,         # Survey selectivity coefficients b2 (log-ransformed downward slope of the selectivity function, for age>pa)
+  logb1Prop = data$logb1PropInit, # Survey selectivity coefficients b1 (log-transformed upward slope of the selectivity function, for age<pa)
+  logb2Prop = data$logb2PropInit, # Survey selectivity coefficients b2 (log-ransformed downward slope of the selectivity function, for age>pa)
   palogNA1 = 1,                   # Probit-transformed coffecient a of the autoregressive recruitment model (random effects)
   logSigmalogNA1=0,               # log-transformed standard deviation of log-recruitment in the autoregressive recruitment model (random effects)
   ulogNA1=rep(0,(data$nYears-1))  # random effects proper 
