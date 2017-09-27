@@ -22,12 +22,14 @@ graphics.off()                              # clear graphical windows
 YearSpan=1992:2016                          # set the range of year over which the model is run
 REswitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
                                             # 0=fixed effects, 1=random effects
+PropSurveySwitch = 0                        # Turn on and off surveys with proportions 0 is off and 1 is on
+
 ## Which surveys to include
 surveys <- c("Winter","Ecosystem","Russian")
 #surveys <- c("Winter","Ecosystem")
 #surveys <- c("Ecosystem","Russian")
+#surveys <- c("Ecosystem")
 
-#surveysProp <- NULL
 surveysProp <- c("WGIDEEPS")
 
 ## Working Directory

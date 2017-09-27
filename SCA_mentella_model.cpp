@@ -10,12 +10,15 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(CatchNrow);    // number of catch-at-age observations
   DATA_INTEGER(SurveyNrow);   // number of survey observations
   DATA_INTEGER(NageBlocks);   // number of age blocks in ageblocks file
+  DATA_INTEGER(anyPropData);  // is 0 if no surveys with proportions
+  DATA_INTEGER(SurveyPropsNrow); // number of survey observations with proportions
+  DATA_ARRAY(AgeBlocks);      // predefined age blocks in ageblocks file
+  DATA_ARRAY(SurveyProps);    // Survey index proportions
   DATA_ARRAY(TotalCatches);   // Total catch in Tonnes
   DATA_ARRAY(CatchAtAge);     // Catch-at-age
   DATA_ARRAY(SurveyIndex);    // Survey indices
   DATA_ARRAY(WeightAtAge);    // year * age matrix of mean individual weight (in kg)
   DATA_ARRAY(MaturityAtAge);  // year * age matrix of mean individual maturity (0 to 1)
-  DATA_ARRAY(AgeBlocks);      // predefined age blocks in ageblocks file
   DATA_INTEGER(nYears);       // number of years in the population model
   DATA_INTEGER(nAges);        // number of age in the population model
   DATA_INTEGER(nSurveys);     // number of surveys
@@ -38,6 +41,10 @@ Type objective_function<Type>::operator() ()
   PARAMETER(Demlogw); // scale parameter for demersal fleet selectivity 
   PARAMETER(pPela50); // probit of the 'a50' parameter for pelagic fleet selectivity
   PARAMETER(Pellogw); // scale parameter for pelagic fleet selectivity
+  PARAMETER(pPropa50); // probit of the 'a50' parameter for pelagic fleet selectivity
+  PARAMETER(Proplogw);
+  PARAMETER_VECTOR(logVarLogIProp); // log of variances of log Numbers-at-age for the surveys
+  PARAMETER(Propplus);
   PARAMETER(DemlogVarLogC); // log of variance of log Catches-at-age for the demersal fleet
   PARAMETER(PellogVarLogC); // log of variance of log Catches-at-age for the pelagic fleet
   PARAMETER_VECTOR(logVarLogI); // log of variances of log Numbers-at-age for the surveys
@@ -45,11 +52,11 @@ Type objective_function<Type>::operator() ()
   PARAMETER(Demsplus); // used to calculate demersal fleet selectivity for the +group, not estimated - obsolete?
   PARAMETER(Pelsplus); // used to calculate pelagic fleet selectivity for the +group, not estimated - obsolete?
   PARAMETER_VECTOR(pa0); // probit of the coefficients for the survey selectivity-at-age
-  PARAMETER_VECTOR(pa0Prop); // probit of the coefficients for the survey selectivity-at-age for proportion data
+  //PARAMETER_VECTOR(pa0Prop); // probit of the coefficients for the survey selectivity-at-age for proportion data
   PARAMETER_VECTOR(logb1); // coefficients for the survey selectivity-at-age
   PARAMETER_VECTOR(logb2); // coefficients for the survey selectivity-at-age
-  PARAMETER_VECTOR(logb1Prop);
-  PARAMETER_VECTOR(logb2Prop);
+  //PARAMETER_VECTOR(logb1Prop);
+  //PARAMETER_VECTOR(logb2Prop);
   PARAMETER(logM2); // log of natural mortality
   PARAMETER(palogNA1);       // RE starts here, probit of the log of initial number (age 1 in year 1)
   PARAMETER(logSigmalogNA1); // variance of the AR process noise
@@ -67,10 +74,11 @@ Type objective_function<Type>::operator() ()
   }
 
   // probit transformations for bounded a0 coefficients (survey selectivity at age for proportions)
-  vector<Type> a0Prop(nSurveysProp);
+  /*vector<Type> a0Prop(nSurveysProp);
   for (int i=0; i<(nSurveysProp); i++){
     a0Prop(i) = lowerAgeBoundary(i)+(exp(pa0Prop(i))/(Type(1.0)+exp(pa0Prop(i))))*(upperAgeBoundary(i)); // bounded between lower and upper age in the data
   }
+   */
   
   // probit transformations for bounded autoregressive recruitment model parameter
   Type alogNA1=Type(2)/(Type(1) + exp(-Type(2)*palogNA1)) - Type(1); // bounded between -1 and 1
@@ -232,7 +240,7 @@ Type objective_function<Type>::operator() ()
   }
 
   // *** survey selectivity at age for proportion data
-  vector<Type> a1P(nSurveysProp);  
+  /*vector<Type> a1P(nSurveysProp);  
   vector<Type> a2P(nSurveysProp);
   vector<Type> b1P(nSurveysProp);
   vector<Type> b2P(nSurveysProp);
@@ -255,7 +263,24 @@ Type objective_function<Type>::operator() ()
       SAProp(i,a) = ((exp(a1P(i)*Ta*Ta+b1P(i)*Ta+c1P(i))*(Ta<a0Prop(i)))+(exp(a2P(i)*Ta*Ta+b2P(i)*Ta+c2P(i))*(Ta>=a0Prop(i))))*Type(0.999)+Type(0.001);// Survey selectivities
     }
   }
+  */
+  
+  // new selectivity for proporiton data - using similar as pelagic fleet selectivity
+  Type Propa50=Type(6.0)+(exp(pPropa50)/(Type(1.0)+exp(pPropa50)))*Type(19.0); // bounded between 6 and 19
+  
+  array <Type> SAProp(nSurveysProp,nAges);  
+  SAProp.setZero();
+  for (int i=0; i<(nSurveysProp); i++){
+    for(int a=(7-minAge); a<(nAges-1); ++a){    // loop on ages from age 7 to one before max age
+      x=(Type(a+minAge)-Propa50)/exp(Proplogw);
+      Type tanhx;
+      tanhx=(exp(x)-exp(-x))/(exp(x)+exp(-x));
+      SAProp(i,a)=Type(0.5)*(Type(1.0)+tanhx);	      // fleet selectivity for ages 9+, pelagic
+    }
+    SAProp(i,nAges-1)=exp(Pelsplus)/(Type(1.0)+exp(Pelsplus));// fleet selectivity for the plus group, pelagic
+  }
 
+  
   // *** Natural mortality
   Type M2=exp(logM2);      		                      
 
@@ -263,32 +288,26 @@ Type objective_function<Type>::operator() ()
   // initial conditions (year 1 and age 1)
   array<Type> logN(nYears,nAges); // log-numbers in the population matrix
   array<Type> logTriN(nYears+1,nAges+nYears); // extended population matrix (1 extra year and as many extra ages as the number of years of observations)
-  array<Type> TriN(nSurveysProp,nYears+1,nAges+nYears);
-  TriN.setZero();
   
   for(int a=0; a<nAges; ++a){
     logN(0,a)=logNY1(a);                    // fill in first row of logN with logNY1
     logTriN(0,a)=logNY1(a);                 // fill in first row of logN with logNY1
-    //TriN(0,a) = exp(logNY1(a));
     }
  
   for(int y=1; y<nYears; ++y){  // loop on years, i.e. rows (start on second year)
     if(REswitch < 1){ // fixed effects on recruits
       logN(y,0)=logNA1fe(y-1);// fill in first column of logN with logNA1
       logTriN(y,0)=logNA1fe(y-1);// fill in first column of logN with logNA1
-      //TriN(y,0)=exp(logNA1fe(y-1));
     }
     
     if(REswitch > 0){ // random effects on recruits
       logN(y,0)=logNA1re(y-1);// fill in first line of logN with logNA1
       logTriN(y,0)=logNA1re(y-1);// fill in first line of logN with logNA1
-      //TriN(y,0)=exp(logNA1re(y-1));
     }
     
     for(int a=1; a<(nAges-1); ++a){    // loop on ages (start at second age column and end at one before last)
       logN(y,a)=logN(y-1,a-1)-F(y-1,a-1)-M2;// fill in logN for age a and year y
       logTriN(y,a) = logN(y,a);// fill in logN for age a and year y
-      //TriN(y,0)=exp(logNA1re(y-1));
     }
     
     // plus group in the logN matrix
@@ -297,59 +316,77 @@ Type objective_function<Type>::operator() ()
     // filling the extended population matrix for older age groups, including the +group
     for(int a = (nAges-1); a <(nAges+y); ++a){
       logTriN(y,a) = logTriN(y-1,a-1)-F(y-1,nAges-1)-M2;
-      //TriN(y,a) = exp(logTriN(y-1,a-1)-F(y-1,nAges-1)-M2);
     }
   }
 
-  
   // filling the extended population matrix for the last year
   for(int a = 1; a <(nAges+nYears); ++a){
       logTriN(nYears,a) = logTriN(nYears-1,a-1)-F(nYears-1,nAges-1)-M2;
-      //TriN(nYears,a) = exp(logTriN(nYears-1,a-1)-F(nYears-1,nAges-1)-M2);
     }
 
-  
-  // create a matrix based on the triangular matrix used for the proportions
-  array <Type> scalingFactor(nSurveysProp,nYears);
+  array<Type> TriN(nSurveysProp,nYears+1,nAges+nYears);
+  array <Type> scalingFactor(nSurveysProp,nYears+1);
+  TriN.setZero();
   scalingFactor.setZero(); 
   for(int s=0; s<nSurveysProp; ++s){
-    for(int y=0; y<(nYears+1); ++y){;
+    for(int y=0; y<(nYears+1); ++y){
       for(int a=0; a<(nAges+y); ++a){
-	//TriN(y,a) = exp(logTriN(y,a));
-	if(a<=(nAges-1)) TriN(s,y,a) = SAProp(s,a)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,a)));
-	if(a>(nAges-1)) TriN(s,y,a) = SAProp(s,nAges-1)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,nAges-1)));
-	scalingFactor(s,y) = scalingFactor(s,y) + TriN(s,y,a);
+        
+        if(y<nYears){
+          if(a<=(nAges-1)) TriN(s,y,a) = SAProp(s,a)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,a)));
+          if(a>(nAges-1)) TriN(s,y,a) = SAProp(s,nAges-1)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,nAges-1)));
+          //if(a<=(nAges-1)) TriN(s,y,a) = exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,a)));
+          //if(a>(nAges-1)) TriN(s,y,a) = exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,nAges-1)));
+        }
+        if(y>(nYears-1)){
+          if(a<=(nAges-1)) TriN(s,y,a) = SAProp(s,a)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(nYears-1,a)));
+          if(a>(nAges-1)) TriN(s,y,a) = SAProp(s,nAges-1)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(nYears-1,nAges-1)));
+          //if(a<=(nAges-1)) TriN(s,y,a) = exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(nYears-1,a)));
+          //if(a>(nAges-1)) TriN(s,y,a) = exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(nYears-1,nAges-1)));
+        }
+        scalingFactor(s,y) = scalingFactor(s,y) + TriN(s,y,a);
       }
     }
   }
-
+  
   // create the proportions matrix
   array<Type> IndexProp(nSurveysProp,nYears+1,nAges+nYears);
-  IndexProp.setZero();
-  for(int s=0; s<nSurveysProp; ++s){
-    for(int y=0; y<(nYears+1); ++y){;
-      for(int a=0; a<(nAges+y); ++a){
-	IndexProp(s,y,a) = TriN(s,y,a)/scalingFactor(s,y);
+    IndexProp.setZero();
+    for(int s=0; s<nSurveysProp; ++s){
+      for(int y=0; y<(nYears+1); ++y){
+        for(int a=0; a<(nAges+y); ++a){
+          IndexProp(s,y,a) = TriN(s,y,a)/scalingFactor(s,y);
+        }
       }
     }
-  }
-
-  
-  // create truncated proportion matrix. Truncated according to the predefined age blocks
-  array<Type> IndexPropTruncMat(nSurveysProp,nYears+1,NageBlocks);
-  IndexPropTruncMat.setZero();
-  for(int s=0; s<nSurveysProp; ++s){
-    for (int y=0; y<(nYears+1); ++y){
-      //Find max age
-      //maxAgeMat <- y - 1992 + 19;
-      for (int ageBl = 0; ageBl<(NageBlocks); ++ageBl){
-	for(int age = CppAD::Integer(AgeBlocks(ageBl,1)); age < CppAD::Integer(AgeBlocks(ageBl,2)); ++age){
-	  IndexPropTruncMat(s,y,ageBl) = IndexPropTruncMat(s,y,ageBl) + IndexProp(s,y,age-minAge);
-	}
+    
+    // create truncated proportion matrix. Truncated according to the predefined age blocks
+    array<Type> IndexPropTruncMat(nSurveysProp,nYears+1,NageBlocks);
+    IndexPropTruncMat.setZero();
+    for(int s=0; s<nSurveysProp; ++s){
+      for (int y=0; y<(nYears+1); ++y){
+        for (int ageBl = 0; ageBl<(NageBlocks); ++ageBl){
+          Type minAgeBl = CppAD::Integer(AgeBlocks(ageBl,1));
+          Type maxAgeBl = CppAD::Integer(AgeBlocks(ageBl,2));
+          
+          IndexPropTruncMat(s,y,ageBl) = 0;
+          if(maxAgeBl <= nAges + nYears){
+            for(int age = CppAD::Integer(minAgeBl)-2; age < CppAD::Integer(maxAgeBl)-1; ++age){
+              IndexPropTruncMat(s,y,ageBl) = IndexPropTruncMat(s,y,ageBl) + IndexProp(s,y,age);
+            }
+          }
+          if(maxAgeBl > (nAges+nYears)){
+            if(minAgeBl <= nAges+nYears){
+              maxAgeBl = nAges+nYears;
+              for(int age = CppAD::Integer(minAgeBl)-2; age < CppAD::Integer(maxAgeBl); ++age){
+                IndexPropTruncMat(s,y,ageBl) = IndexPropTruncMat(s,y,ageBl) + IndexProp(s,y,age);
+              }
+            }
+          }
+        }
       }
     }
-  }
-  
+    
   // *** initialise nll
   Type nll=0;
 
@@ -377,13 +414,14 @@ Type objective_function<Type>::operator() ()
   } 
   
   Type nll1 = nll; // likelihood component for the catch-at-age
-  
+
   // *** predict survey indices and compute nll component
   vector<Type> VarLogI(nSurveys);			      // variance of logSurvey
   for(int i=0; i<nSurveys; ++i){
     VarLogI(i)=exp(logVarLogI(i));
   }
   vector<Type> predlogI(SurveyNrow);
+  Type dummy;
   for(int i=0; i<SurveyNrow; ++i){ 		      // loop on survey data
     int sy=SurveyYear(i)-minYear; // index of survey year
     int sa=SurveyAge(i)-minAge; // index of survey age
@@ -406,8 +444,27 @@ Type objective_function<Type>::operator() ()
   Rcout << "PredTotalCatches " << PredTotalCatches << "\n";
   
   Type nll3 = nll - nll1 - nll2; // likelihood component for the total catches in tonnes
-  
 
+  // *** predict proportion survey indices and compute nll component
+  if(anyPropData > 0){
+  vector<Type> VarLogIProp(nSurveysProp);			      // variance of logSurvey
+  for(int i=0; i<nSurveysProp; ++i){
+  VarLogIProp(i)=exp(logVarLogIProp(i));
+  }
+  for(int i=0; i<SurveyPropsNrow; ++i){ 		      // loop on survey data
+  int ss=CppAD::Integer(SurveyProps(i,2))-1;                    // index of survey
+  int sy=CppAD::Integer(SurveyProps(i,0))-minYear;              // index of survey year
+  int sa=CppAD::Integer(SurveyProps(i,1))-1;                    // index of survey age
+  
+  Type logitIndObs = log(SurveyProps(i,3)/(Type(1.0)-SurveyProps(i,3)));
+  Type logitIndPred = log(IndexPropTruncMat(ss,sy,sa)/(Type(1.0)-IndexPropTruncMat(ss,sy,sa)));
+  
+  nll+=-dnorm(logitIndObs,logitIndPred,sqrt(VarLogIProp(ss)),true);  // assume logit transformed data are normaly distributed
+  }
+  Type nll4 = nll - nll1 - nll2 - nll3; // likelihood component for the survey indices proportions
+}
+  
+  
 /*<- test code to set age distribution in year 1 as an AR(1) process. Not in use for the moment
 //Likelihood contribution for the RE logNY1
  for(int i=0;i<(nAges-1);i++)
@@ -487,6 +544,7 @@ Type objective_function<Type>::operator() ()
   //  ADREPORT(alogNA1);
   //}
   ADREPORT(logTriN);
+  ADREPORT(IndexProp);
   // returning negative log-likelihood
   return nll;
 

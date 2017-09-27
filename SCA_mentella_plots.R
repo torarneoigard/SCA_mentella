@@ -28,6 +28,7 @@ indSA <- which(rep.rnames=="SA")
 indlogSA <- which(rep.rnames=="logSA")
 indlogSSB <- which(rep.rnames=="logSSB")    # extract line numbers for SSB
 indlogTriN <- which(rep.rnames=="logTriN")  # extract line numbers for triangular population matrix
+indIndexPropTruncMa <- which(rep.rnames=="IndexPropTruncMa")
 
 # output vectors for plotting
 logNY1 <- rep.matrix[indlogNY1,1]

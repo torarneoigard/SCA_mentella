@@ -229,7 +229,6 @@ if("Russian"%in%surveys){
   #Xc=data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
   
   X=rbind(X,data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index))
-  X=subset(X,Index>0) # remove lines with zeroes
   
   SurveyTime <- append(SurveyTime,0.9)
   logQSurveyInit <- append(logQSurveyInit,-16)
@@ -245,6 +244,9 @@ if("Russian"%in%surveys){
   surveyCounter <- surveyCounter + 1
   
 }
+
+X=subset(X,Index>0) # remove lines with zeroes
+
 
 #--------------------------
 #Survey index in proportions
@@ -284,6 +286,12 @@ Age2Blocks=function(XProp,AgeBlocks,StartYear,PlusGroupInStartYear){ # recode a 
 if(length(surveysProp)>0){
   SurveyTimeProp <- NULL
   XProp <- NULL
+  pa0PropInit <- NULL
+  logb1PropInit <- NULL
+  logb2PropInit <- NULL
+  logb1PropMap <- NULL
+  logb2PropMap <- NULL
+  
   surveyCounterProp <- 1
   AgeBlocks=read.table(file='AgeBlocks.txt',sep='\t',header=TRUE) # read the Age blocks data file
   
@@ -298,15 +306,28 @@ if(length(surveysProp)>0){
     XProp=rbind(XProp,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp)) 
     XPropBlocks=Age2Blocks(XProp,AgeBlocks,YearSpan[1],19) # construct the same table but with AgeBlocks instead of Ages in years
 
+    pa0PropInit <- append(pa0PropInit,log((8.0891-2)/(11-8.0891)))
+    logb1PropInit <- append(logb1PropInit,-0.15861)
+    logb1PropMap <- append(logb1PropMap,1)
+    logb2PropInit <- append(logb2PropInit,-10)
+    logb2PropMap <- append(logb2PropMap,NA)
+    
     SurveyTimeProp <- append(SurveyTimeProp,0.67)
     surveyCounterProp <- surveyCounterProp + 1
     
   }
   XPropBlocks=subset(XPropBlocks,IndexProp>0) # remove lines with zero data
   data$SurveyProps=as.matrix(XPropBlocks)
-  data$AgeBlocks=AgeBlocks
+  data$SurveyPropsNrow = dim(XPropBlocks)[1]
+  data$AgeBlocks=as.matrix(AgeBlocks)
   data$SurveyTimeProp=SurveyTimeProp
   data$nSurveysProp=length(unique(XProp$Survey))
+  data$NageBlocks <- dim(AgeBlocks)[1]
+  data$pa0PropInit <- pa0PropInit
+  data$logb1PropInit <- logb1PropInit
+  data$logb2PropInit <- logb2PropInit
+  data$logb1PropMap <- factor(logb1PropMap)
+  data$logb2PropMap <- factor(logb2PropMap)
 }
 
 ####################################
@@ -314,6 +335,8 @@ if(length(surveysProp)>0){
 ####################################
 
 #data$Date=date()
+#if(is.null(surveysProp)) data$anyPropData = 0 else data$anyPropData = 1  #0 if no proportion survey data
+if(PropSurveySwitch == 0) data$anyPropData = 0 else data$anyPropData = 1  #0 if no proportion
 data$REswitch=REswitch
 data$minYear=YearSpan[1]
 data$maxYear=YearSpan[length(YearSpan)]
