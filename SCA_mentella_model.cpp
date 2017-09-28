@@ -460,7 +460,7 @@ Type objective_function<Type>::operator() ()
   
   nll+=-dnorm(logitIndObs,logitIndPred,sqrt(VarLogIProp(ss)),true);  // assume logit transformed data are normaly distributed
   }
-  Type nll4 = nll - nll1 - nll2 - nll3; // likelihood component for the survey indices proportions
+  //Type nll4 = nll - nll1 - nll2 - nll3; // likelihood component for the survey indices proportions
 }
   
   
@@ -534,9 +534,6 @@ Type objective_function<Type>::operator() ()
   ADREPORT(nll1);
   ADREPORT(nll2);
   ADREPORT(nll3);
-  if(anyPropData > 0){
-    ADREPORT(nll4);
-  }
   //ADREPORT(nll);
   //ADREPORT(logNY1);
   //if(REswitch > 0){
