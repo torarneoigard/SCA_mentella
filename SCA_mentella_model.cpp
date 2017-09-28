@@ -277,7 +277,7 @@ Type objective_function<Type>::operator() ()
       tanhx=(exp(x)-exp(-x))/(exp(x)+exp(-x));
       SAProp(i,a)=Type(0.5)*(Type(1.0)+tanhx);	      // fleet selectivity for ages 9+, pelagic
     }
-    SAProp(i,nAges-1)=exp(Pelsplus)/(Type(1.0)+exp(Pelsplus));// fleet selectivity for the plus group, pelagic
+    SAProp(i,nAges-1)=exp(Propplus)/(Type(1.0)+exp(Propplus));// fleet selectivity for the plus group, pelagic
   }
 
   
@@ -421,7 +421,6 @@ Type objective_function<Type>::operator() ()
     VarLogI(i)=exp(logVarLogI(i));
   }
   vector<Type> predlogI(SurveyNrow);
-  Type dummy;
   for(int i=0; i<SurveyNrow; ++i){ 		      // loop on survey data
     int sy=SurveyYear(i)-minYear; // index of survey year
     int sa=SurveyAge(i)-minAge; // index of survey age
@@ -535,6 +534,9 @@ Type objective_function<Type>::operator() ()
   ADREPORT(nll1);
   ADREPORT(nll2);
   ADREPORT(nll3);
+  if(anyPropData > 0){
+    ADREPORT(nll4);
+  }
   //ADREPORT(nll);
   //ADREPORT(logNY1);
   //if(REswitch > 0){
