@@ -76,6 +76,36 @@ ggplot(data=SurveyIndex,aes(x=Year))+
   scale_fill_grey(start = 1, end = 0.25)+
   xlim(data$minYear-0.5,data$maxYear+0.5)
 
+# survey indices in proportion (e.g. WGIDEEPS)
+if(PropSurveySwitch==1){ # test that data is provided for the surveys in proportions
+  SurveyProps=as.data.frame(data$SurveyProps)
+  SurveyProps$AgeBlock=as.factor(SurveyProps$AgeBlock)
+  SurveyProps$Survey=as.factor(SurveyProps$Survey)
+  SurveyProps$Survey=mapvalues(SurveyProps$Survey, from = as.character(1:length(surveysProp)), to = surveysProp)
+  
+  print(ggplot(data=SurveyProps,aes(x=Year))+
+    facet_grid(Survey~.,scales='free_y')+
+    theme(panel.grid=element_blank())+
+    geom_bar(stat='identity',aes(y=IndexProp,fill=AgeBlock),width=1,position='stack',colour='black')+
+    #scale_fill_discrete()+
+    scale_fill_grey(start = 1, end = 0.25)+
+    xlim(data$minYear-0.5,data$maxYear+0.5))
+  
+  # Age blocks used in the model for data in proportion
+  AgeBlocks=as.data.frame(data$AgeBlocks)
+  AgeBlocks$AgeBlocks=(AgeBlocks$maxAge-AgeBlocks$minAge+1)
+  AgeBlocks$valid=1
+  AgeBlocks=rbind(AgeBlocks[1,],AgeBlocks)
+  AgeBlocks$AgeBlocks[1]=AgeBlocks$minAge[1]
+  AgeBlocks$valid[1]=0
+  ggplot(data=AgeBlocks)+
+    geom_bar(stat='identity',aes(x=0,y=AgeBlocks,fill=valid),width=1,position='stack',colour='black',show.legend=FALSE)+
+    theme(aspect.ratio=.1)+
+    coord_flip()
+} 
+
+
+
 # Reshaping of Maturity and Weight-at-age data
 M=as.vector(t(data$MaturityAtAge))
 W=as.vector(t(data$WeightAtAge))
