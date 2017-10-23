@@ -7,6 +7,7 @@
 ## LIBRARIES
 require(TMB)                                # Load TMB library
 require(plyr)                               # Load plyr library
+require(tidyr)                              # Load tidyr library
 require(ggplot2)                            # Load ggplot2 library
 require(gtable)                             # Load gtable library
 require(reshape)                            # load the reshape library
@@ -22,7 +23,7 @@ graphics.off()                              # clear graphical windows
 YearSpan=1992:2016                          # set the range of year over which the model is run
 REswitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
                                             # 0=fixed effects, 1=random effects
-PropSurveySwitch = 0                        # Turn on and off surveys with proportions 0 is off and 1 is on
+PropSurveySwitch = 1                        # Turn on and off surveys with proportions 0 is off and 1 is on
 
 ## Which surveys to include
 surveys <- c("Winter","Ecosystem","Russian")

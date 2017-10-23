@@ -24,8 +24,9 @@ indDemlogFY <- which(rep.rnames=="DemlogFY") # extract line numbers for demersal
 indPellogFY <- which(rep.rnames=="PellogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
 indlogitDemFA <- which(rep.rnames=="logitDemFA") # extract line numbers for demersal fishing mortality in years (Fy's)
 indlogitPelFA <- which(rep.rnames=="logitPelFA") # extract line numbers for demersal fishing mortality in years (Fy's)
-indSA <- which(rep.rnames=="SA")
-indlogSA <- which(rep.rnames=="logSA")
+indSA <- which(rep.rnames=="SA")            # extract line numbers for survey selectivities at age (SA's)
+indlogSA <- which(rep.rnames=="logSA")      # extract line numbers for survey log-selectivities at age (SA's)
+indSAProp <- which(rep.rnames=="SAProp")    # extract line numbers for proportion-survey selectivities at age (SA's)
 indlogSSB <- which(rep.rnames=="logSSB")    # extract line numbers for SSB
 indlogTriN <- which(rep.rnames=="logTriN")  # extract line numbers for triangular population matrix
 indIndexPropTruncMa <- which(rep.rnames=="IndexPropTruncMa")
@@ -46,6 +47,7 @@ logitPelFA.sd <-  rep.matrix[indlogitPelFA,2]
 SA <- matrix(rep.matrix[indSA,1],nrow = length(surveys),byrow = FALSE)
 logSA <- matrix(rep.matrix[indlogSA,1],nrow = length(surveys),byrow = FALSE)
 logSA.sd <- matrix(rep.matrix[indlogSA,2],nrow = length(surveys),byrow = FALSE)
+SAProp <- matrix(rep.matrix[indSAProp,1],nrow = length(surveysProp),byrow = FALSE)
 
 logSSB <- rep.matrix[indlogSSB,1]
 logSSB.sd <- rep.matrix[indlogSSB,2]
@@ -242,7 +244,36 @@ DemC=exp(DemlogC)
 PelC=exp(PellogC)
 PredlogC=log(DemC+PelC)
 
-#Demersal fleet#############################
+
+# TEST 2/10/2017 STRATS HERE#########
+source('~/Documents/Work/Redfish/SCA_mentellaGitHub.20170927/multiplot.R')
+Temp={}
+i=0
+for (year in 1:data$nYears){
+  for (age in 5:18){
+    i=i+1
+    Temp$Year[i]=data$minYear+year-1
+    Temp$Age[i]=data$minAge+age-1
+    Temp$Demersal[i]=exp(log(DemF[year,age])-log(TotF[year,age]+M)+log(1-exp(-TotF[year,age]-M))+log(Abundance[year,age]))
+    Temp$Pelagic[i]=exp(log(PelF[year,age])-log(TotF[year,age]+M)+log(1-exp(-TotF[year,age]-M))+log(Abundance[year,age]))
+    Temp$Total[i]=Temp$Demersal[i]+Temp$Pelagic[i]
+  }
+}
+PredC=data.frame(Year=Temp$Year,Age=Temp$Age,Demersal=Temp$Demersal,Pelagic=Temp$Pelagic,Total=Temp$Total)
+p1=ggplot()+
+  geom_point(data = PredC,aes(y=Year,x=Age,size=Total/2000000),shape = 21, fill = "lightpink",alpha=.9)+
+  theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())+
+  scale_size_identity()
+
+p2=ggplot()+
+  geom_point(data = PredC,aes(y=Year,x=Age,size=Pelagic/2000000),shape = 21, fill = "lightblue",alpha=.9)+
+  theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())+
+  scale_size_identity()
+print(multiplot(p1,p2,cols=2))
+
+# ENDS HERE#########
+
+# Demersal fleet#############################
 # Catches in the demersal fleet
 
 #quartz()
@@ -275,7 +306,7 @@ plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),
      xlim=c(1.5,19.5),ylim=c(data$minYear-0.5,data$maxYear+0.5))
 points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 
-#Pelagic fleet#############################
+# Pelagic fleet#############################
 # Catches in the pelagic fleet
 
 #quartz()
@@ -308,7 +339,7 @@ plot(Xpos,Ypos,cex=delta^.5,pch=19,col=hsv(0.6,1,1,alpha=0.75),
      xlim=c(1.5,19.5),ylim=c(data$minYear-0.5,data$maxYear+0.5))
 points(Xpos,Ypos,cex=(-delta)^.5,pch=19,col=hsv(.95,1,1,alpha=0.75))
 
-#Surveys#############################
+# Surveys#############################
 ## SURVEYS
 obs.vec <- list()
 pred.vec <- list()
@@ -379,8 +410,70 @@ for (i in 1:length(surveys)){
 
 #dev.off()
 
-#############################
-# ADDITIONAL PLOTS AND TABLES
+
+# Surveys in proportion ---------------------------------------------------
+if(length(surveysProp)>0){
+  # Calculate expected numbers at age based on numbers in the population and survey selectivity at age
+  nAgesInTriMatrix=dim(logTriNmatrix)[2]
+  YearSpanInTriMatrix=c(YearSpan,tail(YearSpan,1)+1)
+  if("WGIDEEPS"%in%surveysProp){
+    Year=rep(YearSpanInTriMatrix,nAgesInTriMatrix) # recode the data matrix into a 4 column table
+    Age=rep(data$minAge:(data$minAge+nAgesInTriMatrix-1),each = length(YearSpanInTriMatrix)) # fill in the 'Age' vector
+    #Survey=rep(surveyCounterProp,dim(WGIDEEPS)[1]*(dim(WGIDEEPS)[2]-1))
+    Survey=rep(1,nAgesInTriMatrix*length(YearSpanInTriMatrix)) # fill in the 'Survey' vector
+    TriNmatrix=exp(logTriNmatrix);TriNmatrix[TriNmatrix==1]=0 # get numbers from the triangular matrix
+    SAProp.df=as.data.frame(SAProp)
+    SelectivityMatrix=SAProp.df[rep(seq_len(nrow(SAProp.df)), each=length(YearSpanInTriMatrix)),]
+    SelectivityMatrix[,(dim(SAProp)[2]+1):(nAgesInTriMatrix)]=1
+    TriNmatrix2=TriNmatrix*SelectivityMatrix
+    
+  # Recode the triangular matrix in age-blocks, instead of ages
+  Prop <- NULL
+  AgeBlocks=as.data.frame(data$AgeBlocks)
+  Age2Blocks=function(XProp,AgeBlocks,StartYear,PlusGroupInStartYear){ # recode a dataset by age in years into a dataset by age in age blocks
+    # Xprop is the original table with data by age
+    # AgeBlocks is the table that contains the definition of the age blocks to use
+    # StartYear is the first year to run the model (1992)
+    # PlusGroupInStartYear is what is says (19y)
+    Years=unique(XProp$Year)
+    Surveys=unique(XProp$Survey) 
+    XPropBlocks={}
+    for (S in Surveys){ # loop on surveys
+      for (Y in Years){ # loop on Years
+        for (A in AgeBlocks[,1]){ # loop on Age blocks
+          if (AgeBlocks$maxAge[A]<PlusGroupInStartYear+Y-StartYear){ # test if the age block does not contains the +group for that year
+            Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A])&(Age<=AgeBlocks$maxAge[A]))
+            if(dim(Xsub)[1]>0){
+              XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) #
+              XPropBlocks=rbind(XPropBlocks,XPB)
+            }
+          } else { # +group case
+            if (AgeBlocks$minAge[A]<=PlusGroupInStartYear+Y-StartYear){
+              Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A]))
+              if(dim(Xsub)[1]>0){
+                XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) #
+                XPropBlocks=rbind(XPropBlocks,XPB)
+              }
+            }
+          }
+        }
+      }
+    }
+    XPropBlocks
+  }
+    PropMatrix=TriNmatrix2/rowSums(TriNmatrix2) # calculate proportions
+    IndexProp=as.numeric(as.matrix(PropMatrix)) # fill in the 'Index' vector
+    Prop=rbind(Prop,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp)) 
+    PropBlocks=Age2Blocks(Prop,AgeBlocks,YearSpan[1],19) # construct the same table but with AgeBlocks instead of Ages in years
+     
+  }}
+ggplot()+
+  geom_point(data = PropBlocks,aes(y=Year,x=AgeBlocks$minAge[PropBlocks$AgeBlock],size=IndexProp*20),shape = 21, fill = "lightblue",alpha=0.9)+
+  geom_point(data = XPropBlocks,aes(y=Year,x=AgeBlocks$minAge[XPropBlocks$AgeBlock],size=IndexProp*20),shape = 21, fill = "red",alpha=0.25)+
+  scale_size_identity()
+
+# ADDITIONAL PLOTS AND TABLES############################
+# 
 #############################
 
 # STOCK SUMMARY PLOT AND TABLE
@@ -511,6 +604,6 @@ p2=ggplot(data=LastYear, aes(x=Age, y=N/1e6))+
   theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())
 
 plot.new()
-ggplot_overlay(p1,p2)
-dev.off()
+print(ggplot_overlay(p1,p2))
+#dev.off()
 
