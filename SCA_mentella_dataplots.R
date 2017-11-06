@@ -2,13 +2,13 @@
 # Program designed to produce plots of the
 # data used in the catch-at-age assessment
 #
-# Benjamin Planque, April 2016
+# Benjamin Planque, April 2016, October 2017
 
 graphics.off()
 load('SCA_mentella_data.Rdata')            # load model results
-YearSpan=data$minYear:data$maxYear          # extract year span
+YearSpan=data$minYear:data$maxYear         # extract year span
 
-pdf(file='SCA_mentella_dataplots.pdf')
+pdf(file='SCA_mentella_dataplots.pdf')     # open file to save all plots
 
 # total catches
 TotalCatches=as.data.frame(data$TotalCatches)
@@ -76,21 +76,8 @@ ggplot(data=SurveyIndex,aes(x=Year))+
   scale_fill_grey(start = 1, end = 0.25)+
   xlim(data$minYear-0.5,data$maxYear+0.5)
 
-# survey indices in proportion (e.g. WGIDEEPS)
+# survey indices in proportion (e.g. WGIDEEPS) !!! For now this code only works with one survey in proportions
 if(PropSurveySwitch==1){ # test that data is provided for the surveys in proportions
-  SurveyProps=as.data.frame(data$SurveyProps)
-  SurveyProps$AgeBlock=as.factor(SurveyProps$AgeBlock)
-  SurveyProps$Survey=as.factor(SurveyProps$Survey)
-  SurveyProps$Survey=mapvalues(SurveyProps$Survey, from = as.character(1:length(surveysProp)), to = surveysProp)
-  
-  print(ggplot(data=SurveyProps,aes(x=Year))+
-    facet_grid(Survey~.,scales='free_y')+
-    theme(panel.grid=element_blank())+
-    geom_bar(stat='identity',aes(y=IndexProp,fill=AgeBlock),width=1,position='stack',colour='black')+
-    #scale_fill_discrete()+
-    scale_fill_grey(start = 1, end = 0.25)+
-    xlim(data$minYear-0.5,data$maxYear+0.5))
-  
   # Age blocks used in the model for data in proportion
   AgeBlocks=as.data.frame(data$AgeBlocks)
   AgeBlocks$AgeBlocks=(AgeBlocks$maxAge-AgeBlocks$minAge+1)
@@ -98,10 +85,30 @@ if(PropSurveySwitch==1){ # test that data is provided for the surveys in proport
   AgeBlocks=rbind(AgeBlocks[1,],AgeBlocks)
   AgeBlocks$AgeBlocks[1]=AgeBlocks$minAge[1]
   AgeBlocks$valid[1]=0
-  ggplot(data=AgeBlocks)+
+  nageblocks=dim(AgeBlocks)[1]
+  SurveyProps=as.data.frame(data$SurveyProps)
+  minageblock=min(SurveyProps$AgeBlock)
+  maxageblock=max(SurveyProps$AgeBlock)
+  SurveyProps$AgeBlock=as.factor(SurveyProps$AgeBlock)
+  SurveyProps$Survey=as.factor(SurveyProps$Survey)
+  SurveyProps$Survey=mapvalues(SurveyProps$Survey, from = as.character(1:length(surveysProp)), to = surveysProp)
+  SurveyProps$AgeBlock=factor(SurveyProps$AgeBlock,levels=levels(SurveyProps$AgeBlock)[nageblocks:1])
+  Labels=paste(as.character(AgeBlocks$minAge[maxageblock]),"+",sep='')
+  Labels=c(Labels,paste(as.character(AgeBlocks$minAge[(maxageblock-1):minageblock]),as.character(AgeBlocks$maxAge[(maxageblock-1):minageblock]),sep ='-'))
+  
+  print(ggplot(data=SurveyProps,aes(x=Year))+
+    facet_grid(Survey~.,scales='free_y')+
+    theme(panel.grid=element_blank())+
+    geom_bar(stat='identity',aes(y=IndexProp,fill=AgeBlock),width=1,position='stack',colour='black')+
+    scale_fill_grey(start = 1, end = 0.25,labels=Labels)+
+    #scale_fill_grey(start = 1, end = 0.25)+
+    xlim(data$minYear-0.5,data$maxYear+0.5))
+  
+  # Age blocks used in the model for data in proportion
+  print(ggplot(data=AgeBlocks)+
     geom_bar(stat='identity',aes(x=0,y=AgeBlocks,fill=valid),width=1,position='stack',colour='black',show.legend=FALSE)+
     theme(aspect.ratio=.1)+
-    coord_flip()
+    coord_flip())
 } 
 
 

@@ -74,7 +74,7 @@ logTriNmatrix.std <- (matrix(logTriN.std,nrow = (data$nYears+1),byrow = FALSE))
 # PLOTS #
 #########
 pdf.filename=paste('SCA_mentella_plots',model$date.flag,'.pdf',sep="")
-#pdf(pdf.filename)
+pdf(pdf.filename)
 
 # Population age structure ------------------------------------------------
 # Population age structure in the last year+1 of the assessment
@@ -245,34 +245,6 @@ PelC=exp(PellogC)
 PredlogC=log(DemC+PelC)
 
 
-# TEST 2/10/2017 STRATS HERE#########
-source('~/Documents/Work/Redfish/SCA_mentellaGitHub.20170927/multiplot.R')
-Temp={}
-i=0
-for (year in 1:data$nYears){
-  for (age in 5:18){
-    i=i+1
-    Temp$Year[i]=data$minYear+year-1
-    Temp$Age[i]=data$minAge+age-1
-    Temp$Demersal[i]=exp(log(DemF[year,age])-log(TotF[year,age]+M)+log(1-exp(-TotF[year,age]-M))+log(Abundance[year,age]))
-    Temp$Pelagic[i]=exp(log(PelF[year,age])-log(TotF[year,age]+M)+log(1-exp(-TotF[year,age]-M))+log(Abundance[year,age]))
-    Temp$Total[i]=Temp$Demersal[i]+Temp$Pelagic[i]
-  }
-}
-PredC=data.frame(Year=Temp$Year,Age=Temp$Age,Demersal=Temp$Demersal,Pelagic=Temp$Pelagic,Total=Temp$Total)
-p1=ggplot()+
-  geom_point(data = PredC,aes(y=Year,x=Age,size=Total/2000000),shape = 21, fill = "lightpink",alpha=.9)+
-  theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())+
-  scale_size_identity()
-
-p2=ggplot()+
-  geom_point(data = PredC,aes(y=Year,x=Age,size=Pelagic/2000000),shape = 21, fill = "lightblue",alpha=.9)+
-  theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())+
-  scale_size_identity()
-print(multiplot(p1,p2,cols=2))
-
-# ENDS HERE#########
-
 # Demersal fleet#############################
 # Catches in the demersal fleet
 
@@ -404,13 +376,6 @@ for (i in 1:length(surveys)){
   qqnorm((obs.vec[[i]]-pred.vec[[i]]),main=paste(surveys[i],"survey"))
 }
 
-#qqnorm((Winter.obs-Winter.pred),main='Winter Survey')
-#qqnorm((Ecosystem.obs-Ecosystem.pred),main='Ecosystem Survey')
-#qqnorm((Russian.obs-Russian.pred),main='Russian Groundfish Survey')
-
-#dev.off()
-
-
 # Surveys in proportion ---------------------------------------------------
 if(length(surveysProp)>0){
   # Calculate expected numbers at age based on numbers in the population and survey selectivity at age
@@ -419,59 +384,61 @@ if(length(surveysProp)>0){
   if("WGIDEEPS"%in%surveysProp){
     Year=rep(YearSpanInTriMatrix,nAgesInTriMatrix) # recode the data matrix into a 4 column table
     Age=rep(data$minAge:(data$minAge+nAgesInTriMatrix-1),each = length(YearSpanInTriMatrix)) # fill in the 'Age' vector
-    #Survey=rep(surveyCounterProp,dim(WGIDEEPS)[1]*(dim(WGIDEEPS)[2]-1))
     Survey=rep(1,nAgesInTriMatrix*length(YearSpanInTriMatrix)) # fill in the 'Survey' vector
-    TriNmatrix=exp(logTriNmatrix);TriNmatrix[TriNmatrix==1]=0 # get numbers from the triangular matrix
-    SAProp.df=as.data.frame(SAProp)
-    SelectivityMatrix=SAProp.df[rep(seq_len(nrow(SAProp.df)), each=length(YearSpanInTriMatrix)),]
-    SelectivityMatrix[,(dim(SAProp)[2]+1):(nAgesInTriMatrix)]=1
-    TriNmatrix2=TriNmatrix*SelectivityMatrix
+    TriNmatrix=exp(logTriNmatrix);TriNmatrix[TriNmatrix==1]=0  # get population numbers from the triangular matrix
+    SAProp.df=as.data.frame(SAProp) # format survey selectivity into a data.frame
+    SelectivityMatrix=SAProp.df[rep(seq_len(nrow(SAProp.df)), each=length(YearSpanInTriMatrix)),] # Construct a Matrix of survey selectivity (years*ages)
+    SelectivityMatrix[,(dim(SAProp)[2]+1):(nAgesInTriMatrix)]=1 # set selectivity for 19+ ages to 1
+    TriNmatrix2=TriNmatrix*SelectivityMatrix # compute the Numbers-at-age  corrected by the selectivity
     
-  # Recode the triangular matrix in age-blocks, instead of ages
-  Prop <- NULL
-  AgeBlocks=as.data.frame(data$AgeBlocks)
-  Age2Blocks=function(XProp,AgeBlocks,StartYear,PlusGroupInStartYear){ # recode a dataset by age in years into a dataset by age in age blocks
-    # Xprop is the original table with data by age
-    # AgeBlocks is the table that contains the definition of the age blocks to use
-    # StartYear is the first year to run the model (1992)
-    # PlusGroupInStartYear is what is says (19y)
-    Years=unique(XProp$Year)
-    Surveys=unique(XProp$Survey) 
-    XPropBlocks={}
-    for (S in Surveys){ # loop on surveys
-      for (Y in Years){ # loop on Years
-        for (A in AgeBlocks[,1]){ # loop on Age blocks
-          if (AgeBlocks$maxAge[A]<PlusGroupInStartYear+Y-StartYear){ # test if the age block does not contains the +group for that year
-            Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A])&(Age<=AgeBlocks$maxAge[A]))
-            if(dim(Xsub)[1]>0){
-              XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) #
-              XPropBlocks=rbind(XPropBlocks,XPB)
-            }
-          } else { # +group case
-            if (AgeBlocks$minAge[A]<=PlusGroupInStartYear+Y-StartYear){
-              Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A]))
+    # Recode the triangular matrix in proportions and age-blocks instead of ages
+    Prop <- NULL
+    AgeBlocks=as.data.frame(data$AgeBlocks) # format age-blocks into a data.frame
+    Age2Blocks=function(XProp,AgeBlocks,StartYear,PlusGroupInStartYear){ # recode a dataset by age in years into a dataset by age in age blocks
+      # Xprop is the original table with data by age
+      # AgeBlocks is the table that contains the definition of the age blocks to use
+      # StartYear is the first year to run the model (1992)
+      # PlusGroupInStartYear is what is says (19y)
+      Years=unique(XProp$Year)
+      Surveys=unique(XProp$Survey) 
+      XPropBlocks={}
+      for (S in Surveys){ # loop on surveys
+        for (Y in Years){ # loop on Years
+          for (A in AgeBlocks[,1]){ # loop on Age blocks
+            if (AgeBlocks$maxAge[A]<PlusGroupInStartYear+Y-StartYear){ # test if the age block does not contains the +group for that year
+              Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A])&(Age<=AgeBlocks$maxAge[A]))
               if(dim(Xsub)[1]>0){
                 XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) #
                 XPropBlocks=rbind(XPropBlocks,XPB)
+              }
+            } else { # +group case
+              if (AgeBlocks$minAge[A]<=PlusGroupInStartYear+Y-StartYear){
+                Xsub=subset(XProp,(Survey==S)&(Year==Y)&(Age>=AgeBlocks$minAge[A]))
+                if(dim(Xsub)[1]>0){
+                  XPB=data.frame(Year=Y,AgeBlock=A,Survey=S,IndexProp=sum(Xsub$IndexProp)) #
+                  XPropBlocks=rbind(XPropBlocks,XPB)
+                }
               }
             }
           }
         }
       }
-    }
-    XPropBlocks
-  }
+      XPropBlocks
+    } # function to recode age into age-blocks
     PropMatrix=TriNmatrix2/rowSums(TriNmatrix2) # calculate proportions
     IndexProp=as.numeric(as.matrix(PropMatrix)) # fill in the 'Index' vector
     Prop=rbind(Prop,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp)) 
     PropBlocks=Age2Blocks(Prop,AgeBlocks,YearSpan[1],19) # construct the same table but with AgeBlocks instead of Ages in years
-     
-  }}
-ggplot()+
-  geom_point(data = PropBlocks,aes(y=Year,x=AgeBlocks$minAge[PropBlocks$AgeBlock],size=IndexProp*20),shape = 21, fill = "lightblue",alpha=0.9)+
-  geom_point(data = XPropBlocks,aes(y=Year,x=AgeBlocks$minAge[XPropBlocks$AgeBlock],size=IndexProp*20),shape = 21, fill = "red",alpha=0.25)+
-  scale_size_identity()
-
+  }
+}
+SurveyProps=as.data.frame(model$data$SurveyProps) # observed proportions-at-age block in the survey(s)
+plot.new()
+print(ggplot()+
+  geom_point(data = PropBlocks,aes(y=Year,x=(AgeBlocks$minAge[PropBlocks$AgeBlock]+AgeBlocks$maxAge[PropBlocks$AgeBlock])/2,size=IndexProp*100),shape = 21, fill = "lightblue",alpha=0.5)+
+  geom_point(data = SurveyProps,aes(y=Year,x=(AgeBlocks$minAge[SurveyProps$AgeBlock]+AgeBlocks$maxAge[SurveyProps$AgeBlock])/2,size=IndexProp*100),shape = 21, fill = "lightpink3",alpha=0.5)+
+  scale_size_area(name='Proportion (%)')+
+  labs(x='Age (year)',y='Year',title='Modelled vs. Observed proportions-at-age'))
+  
 # ADDITIONAL PLOTS AND TABLES############################
 # 
 #############################
@@ -535,6 +502,7 @@ SSE=data.frame(Year=YearSpan,
               F19=round(F19,3))
 write.table(SSE,'SCA_mentella_stock_summary4graphs.txt',row.names = FALSE,quote = FALSE,sep='\t')
 
+plot.new()
 ggplot_overlay=function(p1,p2){
   # extract gtable
   g1 <- ggplot_gtable(ggplot_build(p1))
@@ -566,7 +534,7 @@ p1=ggplot(data=SS,aes(x=Year))+
   labs(x='Year',y='Biomass (1000 tonnes)',title='S. mentella in ICES subareas 1 and 2 - summary')+
   xlim(model$data$minYear-0.5,model$data$maxYear+.5)+
   theme_bw()+
-  theme(panel.grid=element_blank(),panel.margin=unit(rep(0,4),rep("pt",4)))
+  theme(panel.grid=element_blank(),panel.spacing=unit(rep(0,4),rep("pt",4)))
 
 p2=ggplot(data=SS, aes(x=Year, y=Recruits.at.age.2))+ 
   geom_bar(stat="identity",fill="yellow",colour='black',alpha=0.5,width=0.6)+
@@ -575,8 +543,8 @@ p2=ggplot(data=SS, aes(x=Year, y=Recruits.at.age.2))+
   theme_bw()+
   theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())
 
-plot.new()
-ggplot_overlay(p1,p2)
+print(ggplot_overlay(p1,p2))
+dev.off()
 
 #######
 # plot age-structure in last year of the assessment
@@ -599,11 +567,13 @@ p1=ggplot(data=LastYear,aes(x=Age))+
 
 p2=ggplot(data=LastYear, aes(x=Age, y=N/1e6))+ 
   geom_bar(stat="identity",fill="yellow",colour='black',alpha=0.5,width=0.6)+
+  labs(y='Numbers (millions)')+
   xlim(data$minAge-0.5,data$minAge+dim(N)[2]-1+0.5)+
   theme_bw()+
   theme(panel.background = element_rect(fill = NA),panel.grid=element_blank(),panel.border=element_blank())
 
-plot.new()
+pdf.filename2=paste('SCA_mentella_plots',model$date.flag,'2.pdf',sep="")
+pdf(pdf.filename2)
 print(ggplot_overlay(p1,p2))
-#dev.off()
+dev.off()
 
