@@ -19,13 +19,18 @@ cat("\014")                                 # cear console
 rm(list=ls())                               # clear workspace
 graphics.off()                              # clear graphical windows
 
-## OPTIONS
 YearSpan=1992:2016                          # set the range of year over which the model is run
-REswitch=1                                  # Switch for running the model with random effects on the recruits (NA1)
-                                            # 0=fixed effects, 1=random effects
+
+## OPTIONS
+RElogNA=1                                   # Recruits (NA1): 0=fixed effect, 1=random effect
+REDemFishMort = 1                           # Demersal fleet fishing mortality: 0=fixed effect, 1=random effect
+REPelFishMort = 1                           # Pelagic fleet fishing mortality: 0=fixed effect, 1=random effect
+REDemFishSel = 1                            # Demersal fishing selctivity: 0=fixed effect, 1=random effect
 PropSurveySwitch = 1                        # Turn on and off surveys with proportions 0 is off and 1 is on
 
-## Which surveys to include
+
+#
+# Which surveys to include
 surveys <- c("Winter","Ecosystem","Russian")
 #surveys <- c("Winter","Ecosystem")
 #surveys <- c("Ecosystem","Russian")

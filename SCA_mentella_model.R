@@ -19,9 +19,21 @@ parameters <- list(
   logNY1=rep(17.1,data$nAges),    # log-numbers in year 1 (for all ages) 
   logNA1fe=rep(18.2,(data$nYears-1)), # log-numbers at age one (for all years except the first one) <- only to be used with the fixed effects model
   DemlogFY=rep(-4,data$nYears),   # partial log-Mortality by year for the Demersal Fleet (separable mortality)
+  DemlogFYinit = -4,
+  logSigmaDemlogFY = 0,
+  paDemlogFY = 1,
   PellogFY=c(rep(-1e6,14),rep(-4,data$nYears-14)),  # partial log-Mortality by year for the Pelagic Fleet (separable mortality)
+  PellogFYinit = -4,
+  logSigmaPellogFY = 0,
+  paPellogFY = 1,
   pDema50=0,                      # Demersal fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
+  pDema50Init = 0, 
+  papDema50=0.5,
+  logSigmaDema50=0,
   Demlogw=1,        		          # Demersal fleet selectivity coefficient 2
+  DemlogwInit = 1,
+  paDemlogw = 1,
+  logSigmaDemlogw = 0,
   pPela50=0,                      # Pelagic fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
   Pellogw=1,        		          # Pelagic fleet selectivity coefficient 2
   pPropa50=0,
@@ -41,7 +53,11 @@ parameters <- list(
   logb2 = data$logb2Init,         # Survey selectivity coefficients b2 (log-ransformed downward slope of the selectivity function, for age>pa)
   palogNA1 = 1,                   # Probit-transformed coffecient a of the autoregressive recruitment model (random effects)
   logSigmalogNA1=0,               # log-transformed standard deviation of log-recruitment in the autoregressive recruitment model (random effects)
-  ulogNA1=rep(0,(data$nYears-1))  # random effects proper 
+  ulogNA1=rep(0,(data$nYears-1)),  # random effects proper
+  uDemlogFY=rep(0,(data$nYears-1)),
+  uPellogFY=rep(-4,data$nYears-14),
+  uDemlogw=rep(0,(data$nYears-1)),
+  uDema50=rep(0,(data$nYears-1))
 )
 
 compile("SCA_mentella_model.cpp")           # compile SCA model
@@ -50,55 +66,90 @@ dyn.load(dynlib("SCA_mentella_model"))      # load model
 NoPellFy <- 1992:2005       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
 ind <- which(NoPellFy %in% YearSpan)
 
-#Objective function depends on wether or not you want logNA1 as random or fixed effect
-if(data$REswitch == 0){
-  map=list(
-    PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind)))),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
-    logQSurvey = data$logQSurveyMap,          # Survey scaling factor for the ecosystem survey is fixed
-    Demsplus=factor(NA),                      # Demersal fleet selectivity for the +group is fixed
-    Pelsplus=factor(NA),                      # Pelagic fleet selectivity for the +group is fixed
-    Propplus=factor(NA),
-    logb1 = data$logb1Map,
-    logb2 = data$logb2Map,
-    logM2=factor(NA),                         # Natural mortality is fixed
-    palogNA1 = factor(NA),                    # parameters for random effect are not estimated 
-    logSigmalogNA1=factor(NA),                # parameters for random effect are not estimated 
-    ulogNA1=factor(rep(NA,(data$nYears-1))))  # parameters for random effect are not estimated 
-  if(data$anyPropData == 0){
-    map$pPropa50 = factor(NA)
-    map$Proplogw = factor(NA)
-    map$logVarLogIProp = factor(NA)
-  } 
-  
-  obj <- MakeADFun(data,parameters,DLL="SCA_mentella_model",checkParameterOrder = FALSE,map=map)
-  
+map = list()
+random = NULL
+
+#TRUE if logNA is fixed effect
+if(data$RElogNA == 0){
+  map$PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind))))       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
+  map$logQSurvey = data$logQSurveyMap          # Survey scaling factor for the ecosystem survey is fixed
+  map$Demsplus=factor(NA)                      # Demersal fleet selectivity for the +group is fixed
+  map$Pelsplus=factor(NA)                      # Pelagic fleet selectivity for the +group is fixed
+  map$Propplus=factor(NA)
+  map$logb1 = data$logb1Map
+  map$logb2 = data$logb2Map
+  map$logM2=factor(NA)                         # Natural mortality is fixed
+  map$palogNA1 = factor(NA)                    # parameters for random effect are not estimated 
+  map$logSigmalogNA1=factor(NA)                # parameters for random effect are not estimated 
+  map$ulogNA1=factor(rep(NA,(data$nYears-1)))  # parameters for random effect are not estimated 
+  map$uDema50=factor(rep(NA,(data$nYears))) 
 } else {
-  map=list(
-    PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind)))),       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
-    logQSurvey= data$logQSurveyMap,          # Survey scaling factor for the ecosystem survey is fixed
+  map$logQSurvey= data$logQSurveyMap          # Survey scaling factor for the ecosystem survey is fixed
     #logQSurvey2=factor(NA),                   # Survey scaling factor for the ecosystem survey is fixed
-    Demsplus=factor(NA),                      # Demersal fleet selectivity for the +group is fixed
-    Pelsplus=factor(NA),                      # Pelagic fleet selectivity for the +group is fixed
-    Propplus=factor(NA),
-    logb1 = data$logb1Map,
-    logb2 = data$logb2Map,
-    logM2=factor(NA),                         # Natural mortality is fixed
-    logNA1fe=factor(rep(NA,(data$nYears-1))))
-  
-  if(data$anyPropData == 0){
-    map$pPropa50 = factor(NA)
-    map$Proplogw = factor(NA)
-    map$logVarLogIProp = factor(NA)
-  } 
-  
-  obj <- MakeADFun(data,parameters,random=c("ulogNA1"),DLL="SCA_mentella_model",checkParameterOrder = FALSE,map=map)
+  map$Demsplus=factor(NA)                     # Demersal fleet selectivity for the +group is fixed
+    #paDemlogFY=factor(NA),
+  map$Pelsplus=factor(NA)                    # Pelagic fleet selectivity for the +group is fixed
+  map$Propplus=factor(NA)
+  map$logb1 = data$logb1Map
+  map$logb2 = data$logb2Map
+  map$logM2=factor(NA)                        # Natural mortality is fixed
+  map$logNA1fe=factor(rep(NA,(data$nYears-1)))
+  random=c("ulogNA1")
 }
+
+#TRUE if Demershal fleet fishing mortality is fixed effect
+if(REDemFishMort == 0){
+  map$DemlogFYinit = factor(NA)
+  map$logSigmaDemlogFY = factor(NA)
+  map$paDemlogFY = factor(NA)
+  map$uDemlogFY=factor(rep(NA,(data$nYears-1)))
+} else {
+  map$DemlogFY=factor(rep(NA,data$nYears))
+  random = append(random,"uDemlogFY")
+}
+
+#TRUE if Pelagic fleet fishing mortality is fixed effect
+if(REPelFishMort == 0){
+  map$PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind))))       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
+  map$PellogFYinit = factor(NA)
+  map$logSigmaPellogFY = factor(NA)
+  map$paPellogFY = factor(NA)
+  map$uPellogFY=factor(rep(NA,data$nYears-14))
+} else {
+  map$PellogFY=factor(c(rep(NA,14),rep(NA,data$nYears-14)))
+  random = append(random,"uPellogFY")
+}
+
+# Demersal fleet fish selectivity
+if(REDemFishSel==0){
+  map$pDema50Init = factor(NA) 
+  map$papDema50=factor(NA)
+  map$logSigmaDema50=factor(NA)
+  map$DemlogwInit = factor(NA)
+  map$paDemlogw = factor(NA)
+  map$logSigmaDemlogw = factor(NA)
+  map$uDemlogw=factor(rep(NA,(data$nYears-1)))
+  map$uDema50=factor(rep(NA,(data$nYears-1)))
+} else {
+  map$pDema50=factor(NA)      # Demersal fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
+  map$Demlogw=factor(NA)      # Demersal fleet selectivity coefficient 2
+  random = append(random,c("uDemlogw","uDema50"))
+}
+
+#TRUE if proportion data is not used
+if(data$anyPropData == 0){
+  map$pPropa50 = factor(NA)
+  map$Proplogw = factor(NA)
+  map$logVarLogIProp = factor(NA)
+} 
+
+obj <- MakeADFun(data,parameters,random=random,DLL="SCA_mentella_model",checkParameterOrder = FALSE,map=map)
 
 # obj$fn()
 # obj$gr()
 system.time(opt <- nlminb(obj$par,obj$fn,obj$gr,control = list(eval.max = 1e6,maxit = 1e6)))
 
-report <- sdreport(obj)
+#report <- sdreport(obj)
 #head(summary(report))
 R.code <- scan('SCA_mentella_model.R',what="",sep="\n")  # reads the current file and store it into the variable 'code'
 cpp.code <- scan('SCA_mentella_model.cpp',what="",sep="\n")  # reads the current file and store it into the variable 'code'
