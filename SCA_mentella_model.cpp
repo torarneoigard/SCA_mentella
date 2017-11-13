@@ -28,7 +28,10 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(lowerAgeBoundary); // Lower limits for the a0 parameter of the selectivity curve (for each survey)
   DATA_VECTOR(upperAgeBoundary); // Upper limits for the a0 parameter for the selectivity curve (for each survey)
   
-  DATA_INTEGER(REswitch);     // 0 fixed effect, 1 random effect
+  DATA_INTEGER(RElogNA);        // Recruitment (NA1): 0 fixed effect, 1 random effect
+  DATA_INTEGER(REDemFishMort);  // Demersal fleet fishing mortality: 0 fixed effect, 1 random effect
+  DATA_INTEGER(REPelFishMort);  // Pelagic fleet fishing mortality: 0 fixed effect, 1 random effect
+  DATA_INTEGER(REDemFishSel);   // Demersal fleet fishing selectivity: 0 fixed effect, 1 random effect
   // end of reading data
 
   // *** parameters declaration
@@ -36,9 +39,21 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(logNY1); // numbers of fish in year 1 (1992)
   PARAMETER_VECTOR(logNA1fe); // numbers of fish at age 1 (2y old), fixed effects model
   PARAMETER_VECTOR(DemlogFY); // Log of the demersal fleet fishing mortality
+  PARAMETER(DemlogFYinit);  // Initial value for AR(1) random effect for annual fishing mortality for Demersal fleet
+  PARAMETER(logSigmaDemlogFY); // Noise variance for AR(1) random effect for annual fishing mortality for Demersal fleet
+  PARAMETER(paDemlogFY); // probit transformed AR(1) parameter for annual fishing mortality for Demersal Fleet
   PARAMETER_VECTOR(PellogFY); // Log of the pelagic fleet fishing mortality
+  PARAMETER(PellogFYinit); // Initial value for AR(1) random effect for annual fishing mortality for Pelagic fleet
+  PARAMETER(logSigmaPellogFY); // Noise variance for AR(1) random effect for annual fishing mortality for Demersal fleet
+  PARAMETER(paPellogFY);// probit transformed AR(1) parameter for annual fishing mortality for Demersal Fleet
   PARAMETER(pDema50); // probit of the 'a50' parameter for demersal fleet selectivity 
+  PARAMETER(pDema50Init);   // Demersal random effect fleet selectivity, a50, initial value
+  PARAMETER(papDema50); // Demersal random effect fleet selectivity, a50, probit AR(1) parameter
+  PARAMETER(logSigmaDema50); // Demersal random effect fleet selectivity random effect param: log sigma
   PARAMETER(Demlogw); // scale parameter for demersal fleet selectivity 
+  PARAMETER(DemlogwInit); // Demersal random effect fleet selectivity, scale parameter, initial value
+  PARAMETER(paDemlogw); // Demersal random effect fleet selectivity, scale parameter, probit AR(1) parameter
+  PARAMETER(logSigmaDemlogw); // Demersal random effect fleet selectivity, scale parameter, noise variance
   PARAMETER(pPela50); // probit of the 'a50' parameter for pelagic fleet selectivity
   PARAMETER(Pellogw); // scale parameter for pelagic fleet selectivity
   PARAMETER(pPropa50); // probit of the 'a50' parameter for pelagic fleet selectivity
@@ -61,11 +76,16 @@ Type objective_function<Type>::operator() ()
   PARAMETER(palogNA1);       // RE starts here, probit of the log of initial number (age 1 in year 1)
   PARAMETER(logSigmalogNA1); // variance of the AR process noise
   PARAMETER_VECTOR(ulogNA1); // noise itself
+  PARAMETER_VECTOR(uDemlogFY); // random effect for annual fishing mortality, demersal fleet
+  PARAMETER_VECTOR(uPellogFY); // random effect for annual fishing mortality, pelagic fleet
+  PARAMETER_VECTOR(uDemlogw); // random effect for fleet selectivity, demersal fleet, scale parameter
+  PARAMETER_VECTOR(uDema50); // random effect for fleet selectivity, demersal fleet, a50 parameter (inflection point)
+  
   // end of parameters declaration
 
   // *** preliminary calculations, indices and log-transformed data
   // probit transformations for bounded a50 coefficients (fleet selectivity)
-  Type Dema50=Type(6.0)+(exp(pDema50)/(Type(1.0)+exp(pDema50)))*Type(13.0); // bounded between 6 and 19
+  Type Dema50fe=Type(6.0)+(exp(pDema50)/(Type(1.0)+exp(pDema50)))*Type(13.0); // bounded between 6 and 19
   Type Pela50=Type(6.0)+(exp(pPela50)/(Type(1.0)+exp(pPela50)))*Type(13.0); // bounded between 6 and 19
   // probit transformations for bounded a0 coefficients (survey selectivity)
   vector<Type> a0(nSurveys);
@@ -82,8 +102,11 @@ Type objective_function<Type>::operator() ()
   
   // probit transformations for bounded autoregressive recruitment model parameter
   Type alogNA1=Type(2)/(Type(1) + exp(-Type(2)*palogNA1)) - Type(1); // bounded between -1 and 1
+  Type aDemlogw=Type(2)/(Type(1) + exp(-Type(2)*paDemlogw)) - Type(1); // bounded between -1 and 1
+  Type apDema50=Type(2)/(Type(1) + exp(-Type(2)*papDema50)) - Type(1); // bounded between -1 and 1
   
-  Rcout << "Dema50: " << Dema50 << "\n"; // prints out untransformed paramter values on screen
+  
+  //Rcout << "Dema50: " << Dema50 << "\n"; // prints out untransformed paramter values on screen
   Rcout << "Pela50: " << Pela50 << "\n";
   Rcout << "a0: " << a0 << "\n";
   
@@ -109,6 +132,28 @@ Type objective_function<Type>::operator() ()
     logNA1re(i-1)=tmplogNA1(i);
   }
   
+  // Demersal random effect fleet selectivity: Scale parameter 
+    Type SigmaDemlogw = exp(logSigmaDemlogw);
+    vector<Type> DemlogwRE(nYears);
+    DemlogwRE(0)=DemlogwInit;
+    for(int y=1;y<nYears;y++){
+      DemlogwRE(y) = aDemlogw*DemlogwRE(y-1)+SigmaDemlogw*uDemlogw(y-1);
+    }
+    
+  // Demersal random effect fleet selectivity: a50 (inflection point) parameters
+  Type SigmaDema50 = exp(logSigmaDema50);
+  vector<Type> pDema50RE(nYears);
+  pDema50RE(0)=pDema50Init;
+  for (int i=1; i< nYears; i++){
+    pDema50RE(i) = apDema50*pDema50RE(i-1)+SigmaDema50*uDema50(i-1);
+  }
+  
+  vector<Type> Dema50RE(nYears);
+  if(REDemFishSel>0){
+    for (int y=0; y< nYears; y++){
+      Dema50RE(y) = Type(6.0)+(exp(pDema50RE(y))/(Type(1.0)+exp(pDema50RE(y))))*Type(13.0); // bounded between 6 and 19
+    }
+  }
   // recoding catch at age data
   vector <int> CatchYear(CatchNrow);
   vector <int> CatchAge(CatchNrow);
@@ -152,23 +197,46 @@ Type objective_function<Type>::operator() ()
   }  
 
   // *** Computation of FA's (fleet selectivities-at-age)
-  // Demersal fleet
+  // Demersal fleet - fixed effect
   Type x;
   Type tanhx;
-  vector <Type> DemFA(nAges);
-  vector <Type> logitDemFA(nAges); // can be removed?
-  DemFA.setZero(); // fill in with zeroes
-  for(int a=0;a<(6-minAge);++a){              // loop on ages before 6y, // can be removed?
-    logitDemFA(a)=-20;// can be removed?
-  }// can be removed?
-  for(int a=(6-minAge); a<(nAges-1); ++a){    // loop on ages from age 6 to one before max age
-    x=(Type(a+minAge)-Dema50)/exp(Demlogw);
-    tanhx=(exp(x)-exp(-x))/(exp(x)+exp(-x));  // need to see if we can find a proper function in cpp for the tanh
-    DemFA(a)=Type(0.5)*(Type(1.0)+tanhx);	      // fleet selectivity for ages 6+, demersal
-    logitDemFA(a)=log((DemFA(a))/(1-DemFA(a)));// can be removed?
+  vector <Type> DemFAfe(nAges);
+  vector <Type> logitDemFAfe(nAges); // can be removed?
+  DemFAfe.setZero(); // fill in with zeroes
+  if(REDemFishSel<1){
+    for(int a=0;a<(6-minAge);++a){              // loop on ages before 6y, // can be removed?
+      logitDemFAfe(a)=-20;// can be removed?
+    }// can be removed?
+    for(int a=(6-minAge); a<(nAges-1); ++a){    // loop on ages from age 6 to one before max age
+      x=(Type(a+minAge)-Dema50fe)/exp(Demlogw);
+      tanhx=(exp(x)-exp(-x))/(exp(x)+exp(-x));  // need to see if we can find a proper function in cpp for the tanh
+      DemFAfe(a)=Type(0.5)*(Type(1.0)+tanhx);	      // fleet selectivity for ages 6+, demersal
+      logitDemFAfe(a)=log((DemFAfe(a))/(1-DemFAfe(a)));// can be removed?
     }
-  DemFA(nAges-1)=exp(Demsplus)/(Type(1.0)+exp(Demsplus));// fleet selectivity for the plus group, demersal
-  logitDemFA(nAges-1)=log(DemFA(nAges-1)/(1-DemFA(nAges-1)));// can be removed?
+    DemFAfe(nAges-1)=exp(Demsplus)/(Type(1.0)+exp(Demsplus));// fleet selectivity for the plus group, demersal
+    logitDemFAfe(nAges-1)=log(DemFAfe(nAges-1)/(1-DemFAfe(nAges-1)));// can be removed?
+  }
+  
+  // Random effect Demersal fleet selectivity
+    matrix <Type> DemFARE(nYears,nAges);
+    matrix <Type> logitDemFARE(nYears,nAges); // can be removed?
+    DemFARE.setZero(); // fill in with zeroes
+    if(REDemFishSel>0){
+      for(int y = 0;y<nYears;++y){
+        for(int a=0;a<(5-minAge);++a){              // loop on ages before 5y, // can be removed?
+          logitDemFARE(y,a)=-20;// can be removed?
+        }// can be removed?
+        for(int a=(5-minAge); a<(nAges-1); ++a){    // loop on ages from age 5 to one before max age
+          x=(Type(a+minAge)-Dema50RE(y))/exp(DemlogwRE(y));
+          tanhx=(exp(x)-exp(-x))/(exp(x)+exp(-x));  // need to see if we can find a proper function in cpp for the tanh
+          DemFARE(y,a)=Type(0.5)*(Type(1.0)+tanhx);	      // fleet selectivity for ages 5+, demersal
+          logitDemFARE(y,a)=log((DemFARE(y,a))/(1-DemFARE(y,a)));// can be removed?
+        }
+        DemFARE(y,nAges-1)=exp(Demsplus)/(Type(1.0)+exp(Demsplus));// fleet selectivity for the plus group, demersal
+        logitDemFARE(y,nAges-1)=log(DemFARE(y,nAges-1)/(1-DemFARE(y,nAges-1)));// can be removed?
+      }
+  }
+    
   // *** Pelagic fleet
   vector <Type> PelFA(nAges);
   vector <Type> logitPelFA(nAges);// can be removed?
@@ -188,24 +256,86 @@ Type objective_function<Type>::operator() ()
 
   // *** Computation of FY's (fleet fishing mortality components by year)
   // Demersal fleet
-  vector <Type> DemFY(nYears);
-  for (int y=0; y<nYears; ++y){ // loop on years
-    DemFY(y)=exp(DemlogFY(y));              // fishing mortality for the demersal fleet
+  
+  
+  // Random effect: creating the AR(1) process for annual Demersal Fishing mortality
+  Type SigmaDemlogFY = exp(logSigmaDemlogFY);   // noise standard deviation
+  // probit transformations for bounded autoregressive recruitment model parameter
+  Type aDemlogFY=Type(2)/(Type(1) + exp(-Type(2)*paDemlogFY)) - Type(1); // bounded between -1 and 1
+  
+  vector<Type> DemlogFYRE(nYears);
+  DemlogFYRE(0) = DemlogFYinit;
+  for (int i=1; i<(nYears); i++){
+    DemlogFYRE(i) = aDemlogFY*DemlogFYRE(i-1)+SigmaDemlogFY*uDemlogFY(i-1);
   }
+  
+  //Demersal fleet fishing mortality: Random effect
+  vector <Type> DemFY(nYears);
+  if(REDemFishMort>0){
+    for (int y=0; y<nYears; ++y){ // loop on years
+      DemFY(y)=exp(DemlogFYRE(y));              // fishing mortality for the demersal fleet
+    }  
+  }
+  
+  //Demersal fleet fishing mortality: Fixed effect
+  if(REDemFishMort<1){
+    for (int y=0; y<nYears; ++y){ // loop on years
+      DemFY(y)=exp(DemlogFY(y));              // fishing mortality for the demersal fleet
+    }
+  }
+  
+  
   // Pelagic fleet
+  // Random effect: creating the AR(1) process annual Pelagic fishing mortality
+  Type SigmaPellogFY = exp(logSigmaPellogFY);
+  // probit transformations for bounded autoregressive recruitment model parameter
+  Type aPellogFY=Type(2)/(Type(1) + exp(-Type(2)*paPellogFY)) - Type(1); // bounded between -1 and 1
+  
+  
+  vector<Type> PellogFYRE(nYears-14);
+  PellogFYRE(0) = PellogFYinit;
+  for (int i=1; i<(nYears)-14; i++){
+    PellogFYRE(i) = aPellogFY*PellogFYRE(i-1)+SigmaPellogFY*uPellogFY(i-1);
+  }
+  
+  
   vector <Type> PelFY(nYears);
   PelFY.setZero();
-  for (int y=(2006-minYear); y<nYears; ++y){             // loop on years 2006 to last year. (move the start to 2002 after comparison with ADMB results of AFWG2014)
-    PelFY(y)=exp(PellogFY(y));                         // fishing mortality for the pelagic fleet
+  
+  //Pelagic fleet fishing mortality: Random effect
+  if(REPelFishMort>0){
+    for (int y=(2006-minYear); y<nYears; ++y){             // loop on years 2006 to last year. (move the start to 2002 after comparison with ADMB results of AFWG2014)
+      PelFY(y)=exp(PellogFYRE((y-14)));                         // fishing mortality for the pelagic fleet
+    }
   }
+  
+  //Pelagic fleet fishing mortality: Fixed effect
+  if(REPelFishMort<1){
+    for (int y=(2006-minYear); y<nYears; ++y){             // loop on years 2006 to last year. (move the start to 2002 after comparison with ADMB results of AFWG2014)
+      PelFY(y)=exp(PellogFY((y)));                         // fishing mortality for the pelagic fleet
+    }
+  }
+  
+  
   // *** Separable F's (outer_prod)  // check if this can be done with a propoer outer.prod function
   array<Type> DemF(nYears,nAges);
   array<Type> PelF(nYears,nAges);
   array<Type> F(nYears,nAges);
-  for (int y=0; y<nYears ; ++y){
-    for (int a=0; a<nAges ; ++a){
-      DemF(y,a)=DemFY(y)*DemFA(a);
-      PelF(y,a)=PelFY(y)*PelFA(a);
+  if(REDemFishSel>0){
+    for (int y=0; y<nYears ; ++y){
+      for (int a=0; a<nAges ; ++a){
+        DemF(y,a)=DemFY(y)*DemFARE(y,a);
+        PelF(y,a)=PelFY(y)*PelFA(a);
+      }
+    }
+  }
+  
+  if(REDemFishSel<1){
+    for (int y=0; y<nYears ; ++y){
+      for (int a=0; a<nAges ; ++a){
+        DemF(y,a)=DemFY(y)*DemFAfe(a);
+        PelF(y,a)=PelFY(y)*PelFA(a);
+      }
     }
   }
   F=DemF+PelF;						      // Matrix of mortality for both fleets combined
@@ -240,6 +370,7 @@ Type objective_function<Type>::operator() ()
   }
 
   // *** survey selectivity at age for proportion data
+  // THIS IS NOT USED. A DIFFERENT SELECTIVITY CURVE IS USED.
   /*vector<Type> a1P(nSurveysProp);  
   vector<Type> a2P(nSurveysProp);
   vector<Type> b1P(nSurveysProp);
@@ -295,12 +426,12 @@ Type objective_function<Type>::operator() ()
     }
  
   for(int y=1; y<nYears; ++y){  // loop on years, i.e. rows (start on second year)
-    if(REswitch < 1){ // fixed effects on recruits
+    if(RElogNA < 1){ // fixed effects on recruits
       logN(y,0)=logNA1fe(y-1);// fill in first column of logN with logNA1
       logTriN(y,0)=logNA1fe(y-1);// fill in first column of logN with logNA1
     }
     
-    if(REswitch > 0){ // random effects on recruits
+    if(RElogNA > 0){ // random effects on recruits
       logN(y,0)=logNA1re(y-1);// fill in first line of logN with logNA1
       logTriN(y,0)=logNA1re(y-1);// fill in first line of logN with logNA1
     }
@@ -335,14 +466,10 @@ Type objective_function<Type>::operator() ()
         if(y<nYears){
           if(a<=(nAges-1)) TriN(s,y,a) = SAProp(s,a)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,a)));
           if(a>(nAges-1)) TriN(s,y,a) = SAProp(s,nAges-1)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,nAges-1)));
-          //if(a<=(nAges-1)) TriN(s,y,a) = exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,a)));
-          //if(a>(nAges-1)) TriN(s,y,a) = exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(y,nAges-1)));
         }
         if(y>(nYears-1)){
           if(a<=(nAges-1)) TriN(s,y,a) = SAProp(s,a)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(nYears-1,a)));
           if(a>(nAges-1)) TriN(s,y,a) = SAProp(s,nAges-1)*exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(nYears-1,nAges-1)));
-          //if(a<=(nAges-1)) TriN(s,y,a) = exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(nYears-1,a)));
-          //if(a>(nAges-1)) TriN(s,y,a) = exp(logTriN(y,a))*exp(-SurveyTimeProp(s)*(M2+F(nYears-1,nAges-1)));
         }
         scalingFactor(s,y) = scalingFactor(s,y) + TriN(s,y,a);
       }
@@ -461,9 +588,8 @@ Type objective_function<Type>::operator() ()
   nll+=-dnorm(logitIndObs,logitIndPred,sqrt(VarLogIProp(ss)),true);  // assume logit transformed data are normaly distributed
   }
   //Type nll4 = nll - nll1 - nll2 - nll3; // likelihood component for the survey indices proportions
-}
-  
-  
+  }
+  Type nll4 = nll - nll1 - nll2 - nll3;
 /*<- test code to set age distribution in year 1 as an AR(1) process. Not in use for the moment
 //Likelihood contribution for the RE logNY1
  for(int i=0;i<(nAges-1);i++)
@@ -472,13 +598,54 @@ Type objective_function<Type>::operator() ()
   }
 */
 
- //Likelihood contribution for the RE logNA1
-   for(int i=0;i<(nYears-1);i++)
-   {
-     nll += -dnorm(ulogNA1(i),Type(0),Type(1),true);
+   //Likelihood contribution for the RE logNA1
+   if(RElogNA > 0){
+     for(int i=0;i<(nYears-1);i++)
+     {
+       nll += -dnorm(ulogNA1(i),Type(0),Type(1),true);
+     }
    }
-  // nll calculation end here
+   Type nll5 = nll - nll1 - nll2 - nll3 - nll4;
 
+   //Likelihood contribution for the annual fishing mortality random effect, dermersal fleet
+   if(REDemFishMort>0){
+     for(int i=0;i<(nYears-1);i++)
+     {
+       nll += -dnorm(uDemlogFY(i),Type(0),Type(1),true);
+     }
+   }
+   Type nll6 = nll - nll1 - nll2 - nll3 - nll4 - nll5;
+   
+   //Likelihood contribution for the annual fishing mortality random effect, pelagic fleet
+   if(REPelFishMort>0){
+     for(int i=0;i<(nYears-14);i++)
+     {
+       nll += -dnorm(uPellogFY(i),Type(0),Type(1),true);
+     }
+   }
+   Type nll7 = nll - nll1 - nll2 - nll3 - nll4 - nll5 - nll6;
+   
+   //Likelihood contribution for the random effect demersal fleet selectivity, scale parameter
+   if(REDemFishSel>0){
+     for(int i=0;i<(nYears-1);i++)
+     {
+       nll += -dnorm(uDemlogw(i),Type(0),Type(1),true);
+     }
+   }
+   Type nll8 = nll - nll1 - nll2 - nll3 - nll4 - nll5 - nll6 - nll7;
+   
+   //Likelihood contribution for the random effect demersal fleet selectivity, a50 parameter
+   if(REDemFishSel>0){
+     for(int i=0;i<(nYears-1);i++)
+     {
+       nll += -dnorm(uDema50(i),Type(0),Type(1),true);
+     }
+   }
+   Type nll9 = nll - nll1 - nll2 - nll3 - nll4 - nll5 - nll6 - nll7 - nll8;
+   
+   
+  // nll calculation end here
+   
    
   // rest of the code is only for additional outputs
   // Calculating SSB
@@ -499,10 +666,10 @@ Type objective_function<Type>::operator() ()
   NY1=exp(logNY1);
   vector<Type> NA1(nYears-1); // recruitment (number at age 2y) across years
   vector<Type> logNA1(nYears-1); // log-recruitment (number at age 2y) across years
-  if(REswitch < 1){
+  if(RElogNA < 1){
     logNA1=logNA1fe;
   }
-  if(REswitch > 0){
+  if(RElogNA > 0){
     logNA1=logNA1re;
   }
   NA1=exp(logNA1);
@@ -525,8 +692,12 @@ Type objective_function<Type>::operator() ()
   //ADREPORT(DemFY);
   //ADREPORT(PelFA);
   //ADREPORT(DemFA);
-  ADREPORT(logitDemFA);
-  ADREPORT(logitPelFA);
+  //ADREPORT(DemlogFY);
+  //ADREPORT(PellogFY);
+  //ADREPORT(logitDemFA);
+  //ADREPORT(logitPelFA);
+  //ADREPORT(Demlogw);
+  //ADREPORT(Dema50);
   ADREPORT(SA);
   ADREPORT(SAProp);
   ADREPORT(logSA);
@@ -534,7 +705,13 @@ Type objective_function<Type>::operator() ()
   ADREPORT(nll1);
   ADREPORT(nll2);
   ADREPORT(nll3);
-  //ADREPORT(nll);
+  ADREPORT(nll4);
+  ADREPORT(nll5);
+  ADREPORT(nll6);
+  ADREPORT(nll7);
+  ADREPORT(nll8);
+  ADREPORT(nll9);
+  ADREPORT(nll);
   //ADREPORT(logNY1);
   //if(REswitch > 0){
   //  ADREPORT(logNA1re);
@@ -544,6 +721,7 @@ Type objective_function<Type>::operator() ()
   //}
   ADREPORT(logTriN);
   ADREPORT(IndexProp);
+  
   // returning negative log-likelihood
   return nll;
 
