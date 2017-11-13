@@ -186,8 +186,8 @@ if("Ecosystem"%in%surveys){
   #Xb <- data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index)
   X <- rbind(X,data.frame(Year=Year,Age=Age,Survey=Survey,Index=Index))
   SurveyTime <- append(SurveyTime,0.75)
-  logQSurveyInit <- append(logQSurveyInit,-8.160)
-  logQSurveyMap <- append(logQSurveyMap,NA)
+  logQSurveyInit <- append(logQSurveyInit,-8.160) #old version: logQSurveyInit <- append(logQSurveyInit,-8.160)
+  logQSurveyMap <- append(logQSurveyMap,NA) # old version:   logQSurveyMap <- append(logQSurveyMap,NA)
   
   pa0Init <- append(pa0Init,log((8.5883-2)/(15-8.5883)))
   
