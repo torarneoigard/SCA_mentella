@@ -337,7 +337,10 @@ if(length(surveysProp)>0){
 #data$Date=date()
 #if(is.null(surveysProp)) data$anyPropData = 0 else data$anyPropData = 1  #0 if no proportion survey data
 if(PropSurveySwitch == 0) data$anyPropData = 0 else data$anyPropData = 1  #0 if no proportion
-data$REswitch=REswitch
+data$RElogNA=RElogNA
+data$REDemFishMort=REDemFishMort
+data$REPelFishMort=REPelFishMort
+data$REDemFishSel=REDemFishSel
 data$minYear=YearSpan[1]
 data$maxYear=YearSpan[length(YearSpan)]
 data$minAgeInCatch=min(CatchAtAge2$Age)
