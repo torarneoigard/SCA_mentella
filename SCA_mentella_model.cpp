@@ -691,11 +691,22 @@ Type objective_function<Type>::operator() ()
   //ADREPORT(PelFY);
   //ADREPORT(DemFY);
   //ADREPORT(PelFA);
-  //ADREPORT(DemFA);
-  //ADREPORT(DemlogFY);
-  //ADREPORT(PellogFY);
-  //ADREPORT(logitDemFA);
-  //ADREPORT(logitPelFA);
+  //if(REDemFishSel<1){
+  //  ADREPORT(DemFAfe);
+  //  }
+  if(REDemFishMort>0){    // if random effects for demersal fleet mortality annual component
+    ADREPORT(DemlogFYRE); // report demersal fleet annual mortality
+  }
+  if(REPelFishMort>0){    // if random effects for pelagic fleet mortality annual component
+    ADREPORT(PellogFYRE); // report pelagic fleet annual mortality
+  }
+  if(REDemFishSel<1){     // if random effects for demersal fleet are on
+    ADREPORT(logitDemFAfe); // report logit of demersal fleet selectivity
+  }
+  if(REDemFishSel>0){     // if random effects for demersal fleet are on
+    ADREPORT(logitDemFARE); // report logit of demersal fleet selectivity
+  }
+  ADREPORT(logitPelFA); // report logit of pelagic fleet selectivity
   //ADREPORT(Demlogw);
   //ADREPORT(Dema50);
   ADREPORT(SA);

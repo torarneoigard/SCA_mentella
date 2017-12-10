@@ -20,9 +20,21 @@ rep.matrix <- summary(model$rep)            # get the list of reported values an
 rep.rnames <- rownames(rep.matrix)          # get the names of variables
 indlogNY1 <- which(rep.rnames=="logNY1")    # extract line numbers for numbers in year one
 indlogNA1 <- which(rep.rnames=="logNA1")    # extract line numbers for numbers at age one
-indDemlogFY <- which(rep.rnames=="DemlogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
-indPellogFY <- which(rep.rnames=="PellogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
-indlogitDemFA <- which(rep.rnames=="logitDemFA") # extract line numbers for demersal fishing mortality in years (Fy's)
+if (REDemFishMort==0){
+  indlogDemFY <- which(rep.rnames=="DemlogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
+} else{
+  indlogDemFY <- which(rep.rnames=="DemlogFYRE") # extract line numbers for demersal fishing mortality in years (Fy's)
+}
+if (REPelFishMort==0){
+  indlogPelFY <- which(rep.rnames=="PellogFY") # extract line numbers for demersal fishing mortality in years (Fy's)
+}else{
+  indlogPelFY <- which(rep.rnames=="PellogFYRE") # extract line numbers for demersal fishing mortality in years (Fy's)
+}
+if (REDemFishSel==0){
+  indlogitDemFAfe <- which(rep.rnames=="logitDemFAfe") # extract line numbers for demersal fishing mortality in years (Fy's)
+}else{
+  indlogitDemFARE <- which(rep.rnames=="logitDemFARE") # extract line numbers for demersal fishing mortality in years (Fy's)
+}
 indlogitPelFA <- which(rep.rnames=="logitPelFA") # extract line numbers for demersal fishing mortality in years (Fy's)
 indSA <- which(rep.rnames=="SA")            # extract line numbers for survey selectivities at age (SA's)
 indlogSA <- which(rep.rnames=="logSA")      # extract line numbers for survey log-selectivities at age (SA's)
@@ -30,19 +42,30 @@ indSAProp <- which(rep.rnames=="SAProp")    # extract line numbers for proportio
 indlogSSB <- which(rep.rnames=="logSSB")    # extract line numbers for SSB
 indlogTriN <- which(rep.rnames=="logTriN")  # extract line numbers for triangular population matrix
 indIndexPropTruncMa <- which(rep.rnames=="IndexPropTruncMa")
+indnll1 <- which(rep.rnames=="nll1")  # extract line number for the nll component catch at age
+indnll2 <- which(rep.rnames=="nll2")  # extract line number for the nll component survey indices
+indnll3 <- which(rep.rnames=="nll3")  # extract line number for the nll component total catches in tonnes
+indnll4 <- which(rep.rnames=="nll4")  # extract line number for the nll component survey indices in proportions
 
 # output vectors for plotting
 logNY1 <- rep.matrix[indlogNY1,1]
 logNY1.sd <- rep.matrix[indlogNY1,2]
 logNA1 <- c(logNY1[1],rep.matrix[indlogNA1,1])
 logNA1.sd <- c(logNY1.sd[1],rep.matrix[indlogNA1,2])
-DemlogFY <- rep.matrix[indDemlogFY,1]
-DemlogFY.sd <- rep.matrix[indDemlogFY,2]
-PellogFY <- c(rep(-1e6,14),rep.matrix[indPellogFY,1])
-PellogFY.sd <- c(rep(0,14),rep.matrix[indPellogFY,2])
-logitDemFA <-  rep.matrix[indlogitDemFA,1]
+logDemFY <- rep.matrix[indlogDemFY,1]
+logDemFY.sd <- rep.matrix[indlogDemFY,2]
+logPelFY <- c(rep(-1e4,14),rep.matrix[indlogPelFY,1])
+logPelFY.sd <- c(rep(0,14),rep.matrix[indlogPelFY,2])
+if (REDemFishSel==0){
+  logitDemFAfe <-  rep.matrix[indlogitDemFAfe,1]
+  logitDemFAfe.sd <-  rep.matrix[indlogitDemFAfe,2]
+}
+if (REDemFishSel==1){
+  logitDemFARE <-  rep.matrix[indlogitDemFARE,1]
+  logitDemFARE.sd <-  rep.matrix[indlogitDemFARE,2]
+}
+
 logitPelFA <-  rep.matrix[indlogitPelFA,1]
-logitDemFA.sd <-  rep.matrix[indlogitDemFA,2]
 logitPelFA.sd <-  rep.matrix[indlogitPelFA,2]
 SA <- matrix(rep.matrix[indSA,1],nrow = length(surveys),byrow = FALSE)
 logSA <- matrix(rep.matrix[indlogSA,1],nrow = length(surveys),byrow = FALSE)
@@ -69,6 +92,12 @@ logTriN <- rep.matrix[indlogTriN,1]
 logTriN.std <- rep.matrix[indlogTriN,2]
 logTriNmatrix <-  (matrix(logTriN,nrow = (data$nYears+1),byrow = FALSE))
 logTriNmatrix.std <- (matrix(logTriN.std,nrow = (data$nYears+1),byrow = FALSE))
+
+# likelihood components
+nll1 <- rep.matrix[indnll1,1]
+nll2 <- rep.matrix[indnll2,1]
+nll3 <- rep.matrix[indnll3,1]
+nll4 <- rep.matrix[indnll4,1]
 
 #########
 # PLOTS #
@@ -126,12 +155,12 @@ print(ggplot(data=SSB,aes(x=Year,y=SSB))+
 
 # Fishing mortalities -----------------------------------------------------
 FY=data.frame(Year=data$minYear:data$maxYear,
-               DemFY=exp(DemlogFY),
-               DemFY05=exp(DemlogFY-2*DemlogFY.sd),
-               DemFY95=exp(DemlogFY+2*DemlogFY.sd),
-               PelFY=exp(PellogFY),
-               PelFY05=exp(PellogFY-2*PellogFY.sd),
-               PelFY95=exp(PellogFY+2*PellogFY.sd))
+               DemFY=exp(logDemFY),
+               DemFY05=exp(logDemFY-2*logDemFY.sd),
+               DemFY95=exp(logDemFY+2*logDemFY.sd),
+               PelFY=exp(logPelFY),
+               PelFY05=exp(logPelFY-2*logPelFY.sd),
+               PelFY95=exp(logPelFY+2*logPelFY.sd))
 
 
 #quartz("",7,5)
@@ -144,23 +173,47 @@ print(ggplot(data=FY,aes(x=Year))+
 
 
 # Fishing selectivities
+# without random effects
+if (REDemFishSel==0){
 FA=data.frame(Age=data$minAge:data$maxAge,
-              DemFA=exp(logitDemFA)/(1+exp(logitDemFA)),
-              DemFA05=exp(logitDemFA-2*logitDemFA.sd)/(1+exp(logitDemFA-2*logitDemFA.sd)),
-              DemFA95=exp(logitDemFA+2*logitDemFA.sd)/(1+exp(logitDemFA+2*logitDemFA.sd)),
+              DemFA=exp(logitDemFAfe)/(1+exp(logitDemFAfe)),
+              DemFA05=exp(logitDemFAfe-2*logitDemFAfe.sd)/(1+exp(logitDemFAfe-2*logitDemFAfe.sd)),
+              DemFA95=exp(logitDemFAfe+2*logitDemFAfe.sd)/(1+exp(logitDemFAfe+2*logitDemFAfe.sd)),
               PelFA=exp(logitPelFA)/(1+exp(logitPelFA)),
               PelFA05=exp(logitPelFA-2*logitPelFA.sd)/(1+exp(logitPelFA-2*logitPelFA.sd)),
               PelFA95=exp(logitPelFA+2*logitPelFA.sd)/(1+exp(logitPelFA+2*logitPelFA.sd))
               )
+
 #quartz("",7,5)
 print(ggplot(data=FA,aes(x=Age))+
-  geom_line(aes(y=DemFA),colour='blue')+
-  geom_ribbon(aes(y = DemFA,ymin = DemFA05, ymax = DemFA95),fill='lightblue',alpha=0.5)+
-  geom_line(aes(y=PelFA),colour='red')+
+        geom_line(aes(y=DemFA),colour='blue')+
+        geom_ribbon(aes(y = DemFA,ymin = DemFA05, ymax = DemFA95),fill='lightblue',alpha=0.5)+
+        geom_line(aes(y=PelFA),colour='red')+
+        geom_ribbon(aes(y = PelFA,ymin = PelFA05, ymax = PelFA95),fill='lightpink',alpha=0.5)+
+        labs(x='Age (year)',y='Fleet selectivity (Sa)',title='Fleet selectivities-at-age')+
+        lims(y=c(0,1)))
+}
+
+# with Random effects
+if (REDemFishSel==1){
+  FARE=data.frame(year=rep(YearSpan,18),
+                age=rep(2:19,each=data$nYears),
+                DemFARE=exp(logitDemFARE)/(1+exp(logitDemFARE)),
+                DemFARE05=exp(logitDemFARE-2*logitDemFARE.sd)/(1+exp(logitDemFARE-2*logitDemFARE.sd)),
+                DemFARE95=exp(logitDemFARE+2*logitDemFARE.sd)/(1+exp(logitDemFARE+2*logitDemFARE.sd)),
+                PelFA=rep(exp(logitPelFA)/(1+exp(logitPelFA)),each=data$nYears),
+                PelFA05=rep(exp(logitPelFA-2*logitPelFA.sd)/(1+exp(logitPelFA-2*logitPelFA.sd)),each=data$nYears),
+                PelFA95=rep(exp(logitPelFA+2*logitPelFA.sd)/(1+exp(logitPelFA+2*logitPelFA.sd)),each=data$nYears))
+print(ggplot(data=FARE,aes(x=age))+
+  facet_wrap(~year)+
+  geom_line(aes(y=DemFARE))+
+  geom_ribbon(aes(y = DemFARE,ymin = DemFARE05, ymax = DemFARE95),fill='lightblue',alpha=0.5)+
+  geom_line(aes(y=PelFA))+
   geom_ribbon(aes(y = PelFA,ymin = PelFA05, ymax = PelFA95),fill='lightpink',alpha=0.5)+
   labs(x='Age (year)',y='Fleet selectivity (Sa)',title='Fleet selectivities-at-age')+
-  lims(y=c(0,1)))
-
+  lims(y=c(0,1))
+)
+}
 
 # Survey selectivities ----------------------------------------------------
 # with confidence intervals
@@ -199,8 +252,18 @@ ggplot(data=SAdf,aes(x=Age))+
 # Natural mortalities
 M=exp(parameters$logM2)
 # Fishing mortalities
-DemF=FY$DemFY%*%t(FA$DemFA)
-PelF=FY$PelFY%*%t(FA$PelFA)
+# Demersal fleet mortality, no random effects
+if (REDemFishSel==0){
+  DemF=FY$DemFY%*%t(FA$DemFA)
+}
+# Demersal fleet mortality, with random effects
+if (REDemFishSel==1){
+  DemFA=matrix(FARE$DemFARE,nrow=18,byrow=TRUE)
+  DemFY=tcrossprod(rep(1,18),FY$DemFY)
+  DemF=t(DemFY*DemFA)
+    }
+# Pelagic fleet mortality
+PelF=FY$PelFY%*%t(exp(logitPelFA)/(1+exp(logitPelFA)))
 TotF=DemF+PelF
 Z=TotF+M
 
@@ -377,7 +440,7 @@ for (i in 1:length(surveys)){
 }
 
 # Surveys in proportion ---------------------------------------------------
-if(length(surveysProp)>0){
+if(PropSurveySwitch==1){
   # Calculate expected numbers at age based on numbers in the population and survey selectivity at age
   nAgesInTriMatrix=dim(logTriNmatrix)[2]
   YearSpanInTriMatrix=c(YearSpan,tail(YearSpan,1)+1)
@@ -430,7 +493,7 @@ if(length(surveysProp)>0){
     Prop=rbind(Prop,data.frame(Year=Year,Age=Age,Survey=Survey,IndexProp=IndexProp)) 
     PropBlocks=Age2Blocks(Prop,AgeBlocks,YearSpan[1],19) # construct the same table but with AgeBlocks instead of Ages in years
   }
-}
+
 SurveyProps=as.data.frame(model$data$SurveyProps) # observed proportions-at-age block in the survey(s)
 plot.new()
 print(ggplot()+
@@ -438,7 +501,8 @@ print(ggplot()+
   geom_point(data = SurveyProps,aes(y=Year,x=(AgeBlocks$minAge[SurveyProps$AgeBlock]+AgeBlocks$maxAge[SurveyProps$AgeBlock])/2,size=IndexProp*100),shape = 21, fill = "lightpink3",alpha=0.5)+
   scale_size_area(name='Proportion (%)')+
   labs(x='Age (year)',y='Year',title='Modelled vs. Observed proportions-at-age'))
-  
+}
+
 # ADDITIONAL PLOTS AND TABLES############################
 # 
 #############################
@@ -468,11 +532,13 @@ Rec2=exp(logTriNmatrix[1:length(YearSpan),(2-data$minAge+1)])/1e6 # in millions
 Rec6=exp(logTriNmatrix[1:length(YearSpan),(6-data$minAge+1)])/1e6 # in millions
 
 # Fishing mortality
-DemFY=exp(DemlogFY)
-DemFA=exp(logitDemFA)/(1+exp(logitDemFA))
-PelFY=exp(PellogFY)
-PelFA=exp(logitPelFA)/(1+exp(logitPelFA))
-Ftot=(DemFY)%*%t(DemFA)+(PelFY)%*%t(PelFA)
+# DemFY=exp(logDemFY)
+# if (REDemFishSel==0){
+#   DemFA=exp(logitDemFAfe)/(1+exp(logitDemFAfe))
+# }
+# PelFY=exp(logPelFY)
+# PelFA=exp(logitPelFA)/(1+exp(logitPelFA))
+Ftot=TotF
 F12.18=rowMeans(Ftot[,((12:18)-data$minAge+1)])
 F19=Ftot[,(19-data$minAge+1)]
 

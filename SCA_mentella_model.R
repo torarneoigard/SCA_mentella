@@ -149,7 +149,7 @@ obj <- MakeADFun(data,parameters,random=random,DLL="SCA_mentella_model",checkPar
 # obj$gr()
 system.time(opt <- nlminb(obj$par,obj$fn,obj$gr,control = list(eval.max = 1e6,maxit = 1e6)))
 
-#report <- sdreport(obj)
+report <- sdreport(obj)
 #head(summary(report))
 R.code <- scan('SCA_mentella_model.R',what="",sep="\n")  # reads the current file and store it into the variable 'code'
 cpp.code <- scan('SCA_mentella_model.cpp',what="",sep="\n")  # reads the current file and store it into the variable 'code'
