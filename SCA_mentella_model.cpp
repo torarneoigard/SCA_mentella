@@ -40,18 +40,22 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(logNA1fe); // numbers of fish at age 1 (2y old), fixed effects model
   PARAMETER_VECTOR(DemlogFY); // Log of the demersal fleet fishing mortality
   PARAMETER(DemlogFYinit);  // Initial value for AR(1) random effect for annual fishing mortality for Demersal fleet
+  PARAMETER(DemlogFYIntercept);
   PARAMETER(logSigmaDemlogFY); // Noise variance for AR(1) random effect for annual fishing mortality for Demersal fleet
   PARAMETER(paDemlogFY); // probit transformed AR(1) parameter for annual fishing mortality for Demersal Fleet
   PARAMETER_VECTOR(PellogFY); // Log of the pelagic fleet fishing mortality
   PARAMETER(PellogFYinit); // Initial value for AR(1) random effect for annual fishing mortality for Pelagic fleet
+  PARAMETER(PellogFYIntercept);
   PARAMETER(logSigmaPellogFY); // Noise variance for AR(1) random effect for annual fishing mortality for Demersal fleet
   PARAMETER(paPellogFY);// probit transformed AR(1) parameter for annual fishing mortality for Demersal Fleet
   PARAMETER(pDema50); // probit of the 'a50' parameter for demersal fleet selectivity 
   PARAMETER(pDema50Init);   // Demersal random effect fleet selectivity, a50, initial value
+  //PARAMETER(pDema50Intercept); //Not included higher AIC with this intercept, lower likelihood, but also not significant different from 0
   PARAMETER(papDema50); // Demersal random effect fleet selectivity, a50, probit AR(1) parameter
   PARAMETER(logSigmaDema50); // Demersal random effect fleet selectivity random effect param: log sigma
   PARAMETER(Demlogw); // scale parameter for demersal fleet selectivity 
   PARAMETER(DemlogwInit); // Demersal random effect fleet selectivity, scale parameter, initial value
+  PARAMETER(DemlogwIntercept);
   PARAMETER(paDemlogw); // Demersal random effect fleet selectivity, scale parameter, probit AR(1) parameter
   PARAMETER(logSigmaDemlogw); // Demersal random effect fleet selectivity, scale parameter, noise variance
   PARAMETER(pPela50); // probit of the 'a50' parameter for pelagic fleet selectivity
@@ -137,7 +141,7 @@ Type objective_function<Type>::operator() ()
     vector<Type> DemlogwRE(nYears);
     DemlogwRE(0)=DemlogwInit;
     for(int y=1;y<nYears;y++){
-      DemlogwRE(y) = aDemlogw*DemlogwRE(y-1)+SigmaDemlogw*uDemlogw(y-1);
+      DemlogwRE(y) = DemlogwIntercept + aDemlogw*DemlogwRE(y-1)+SigmaDemlogw*uDemlogw(y-1);
     }
     
   // Demersal random effect fleet selectivity: a50 (inflection point) parameters
@@ -266,7 +270,7 @@ Type objective_function<Type>::operator() ()
   vector<Type> DemlogFYRE(nYears);
   DemlogFYRE(0) = DemlogFYinit;
   for (int i=1; i<(nYears); i++){
-    DemlogFYRE(i) = aDemlogFY*DemlogFYRE(i-1)+SigmaDemlogFY*uDemlogFY(i-1);
+    DemlogFYRE(i) = DemlogFYIntercept + aDemlogFY*DemlogFYRE(i-1)+SigmaDemlogFY*uDemlogFY(i-1);
   }
   
   //Demersal fleet fishing mortality: Random effect
@@ -295,7 +299,7 @@ Type objective_function<Type>::operator() ()
   vector<Type> PellogFYRE(nYears-14);
   PellogFYRE(0) = PellogFYinit;
   for (int i=1; i<(nYears)-14; i++){
-    PellogFYRE(i) = aPellogFY*PellogFYRE(i-1)+SigmaPellogFY*uPellogFY(i-1);
+    PellogFYRE(i) = PellogFYIntercept + aPellogFY*PellogFYRE(i-1)+SigmaPellogFY*uPellogFY(i-1);
   }
   
   

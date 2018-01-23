@@ -20,18 +20,22 @@ parameters <- list(
   logNA1fe=rep(18.2,(data$nYears-1)), # log-numbers at age one (for all years except the first one) <- only to be used with the fixed effects model
   DemlogFY=rep(-4,data$nYears),   # partial log-Mortality by year for the Demersal Fleet (separable mortality)
   DemlogFYinit = -4,
+  DemlogFYIntercept = 0,
   logSigmaDemlogFY = 0,
   paDemlogFY = 1,
   PellogFY=c(rep(-1e6,14),rep(-4,data$nYears-14)),  # partial log-Mortality by year for the Pelagic Fleet (separable mortality)
   PellogFYinit = -4,
+  PellogFYIntercept = 0,
   logSigmaPellogFY = 0,
   paPellogFY = 1,
   pDema50=0,                      # Demersal fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
-  pDema50Init = 0, 
+  pDema50Init = 0,
+  #pDema50Intercept = 0,
   papDema50=0.5,
   logSigmaDema50=0,
   Demlogw=1,        		          # Demersal fleet selectivity coefficient 2
   DemlogwInit = 1,
+  DemlogwIntercept = 0,
   paDemlogw = 1,
   logSigmaDemlogw = 0,
   pPela50=0,                      # Pelagic fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
@@ -100,6 +104,7 @@ if(data$RElogNA == 0){
 #TRUE if Demershal fleet fishing mortality is fixed effect
 if(REDemFishMort == 0){
   map$DemlogFYinit = factor(NA)
+  map$DemlogFYIntercept = factor(NA)
   map$logSigmaDemlogFY = factor(NA)
   map$paDemlogFY = factor(NA)
   map$uDemlogFY=factor(rep(NA,(data$nYears-1)))
@@ -112,6 +117,7 @@ if(REDemFishMort == 0){
 if(REPelFishMort == 0){
   map$PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind))))       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
   map$PellogFYinit = factor(NA)
+  map$PellogFYIntercept = factor(NA)
   map$logSigmaPellogFY = factor(NA)
   map$paPellogFY = factor(NA)
   map$uPellogFY=factor(rep(NA,data$nYears-14))
@@ -125,6 +131,7 @@ if(REDemFishSel==0){
   map$pDema50Init = factor(NA) 
   map$papDema50=factor(NA)
   map$logSigmaDema50=factor(NA)
+  map$DemlogwIntercept=factor(NA)
   map$DemlogwInit = factor(NA)
   map$paDemlogw = factor(NA)
   map$logSigmaDemlogw = factor(NA)
@@ -149,7 +156,12 @@ obj <- MakeADFun(data,parameters,random=random,DLL="SCA_mentella_model",checkPar
 # obj$gr()
 system.time(opt <- nlminb(obj$par,obj$fn,obj$gr,control = list(eval.max = 1e6,maxit = 1e6)))
 
+AICest = 2*length(opt$par)+2*opt$objective
+
 report <- sdreport(obj)
+
+#Check the correlation between the estimated parameters
+cormat = cov2cor(report$cov.fixed)
 #head(summary(report))
 R.code <- scan('SCA_mentella_model.R',what="",sep="\n")  # reads the current file and store it into the variable 'code'
 cpp.code <- scan('SCA_mentella_model.cpp',what="",sep="\n")  # reads the current file and store it into the variable 'code'
