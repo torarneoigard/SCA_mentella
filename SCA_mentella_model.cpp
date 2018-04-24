@@ -60,7 +60,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER(logSigmaDemlogw); // Demersal random effect fleet selectivity, scale parameter, noise variance
   PARAMETER(pPela50); // probit of the 'a50' parameter for pelagic fleet selectivity
   PARAMETER(Pellogw); // scale parameter for pelagic fleet selectivity
-  PARAMETER(pPropa50); // probit of the 'a50' parameter for pelagic fleet selectivity
+  PARAMETER(pPropa50); // probit of the 'a50' parameter for proportion survey selectivity
   PARAMETER(Proplogw);
   PARAMETER_VECTOR(logVarLogIProp); // log of variances of log Numbers-at-age for the surveys
   PARAMETER(Propplus);
@@ -109,7 +109,7 @@ Type objective_function<Type>::operator() ()
   Type aDemlogw=Type(2)/(Type(1) + exp(-Type(2)*paDemlogw)) - Type(1); // bounded between -1 and 1
   Type apDema50=Type(2)/(Type(1) + exp(-Type(2)*papDema50)) - Type(1); // bounded between -1 and 1
   
-  
+  // 
   //Rcout << "Dema50: " << Dema50 << "\n"; // prints out untransformed paramter values on screen
   Rcout << "Pela50: " << Pela50 << "\n";
   Rcout << "a0: " << a0 << "\n";
@@ -401,7 +401,7 @@ Type objective_function<Type>::operator() ()
   */
   
   // new selectivity for proporiton data - using similar as pelagic fleet selectivity
-  Type Propa50=Type(6.0)+(exp(pPropa50)/(Type(1.0)+exp(pPropa50)))*Type(19.0); // bounded between 6 and 19
+  Type Propa50=Type(6.0)+(exp(pPropa50)/(Type(1.0)+exp(pPropa50)))*Type(19.0); // bounded between 6 and 25 (changed 19 Apr 2018)
   
   array <Type> SAProp(nSurveysProp,nAges);  
   SAProp.setZero();
@@ -664,7 +664,36 @@ Type objective_function<Type>::operator() ()
     }
     logSSB(y)=log(SSB(y));
   }
-
+  // Calculating TSB
+  array<Type> TSBmatrix(nYears,nAges);
+  vector<Type> logTSB(nYears);
+  vector<Type> TSB(nYears);
+  TSB.setZero();
+  for(int y=0; y<nYears; ++y){
+    for(int a=0; a<nAges; ++a){
+      TSBmatrix(y,a)=exp(logN(y,a))*WeightAtAge(y,a);
+      TSB(y)+=TSBmatrix(y,a)/Type(1000); // TSB in tonnes
+    }
+    logTSB(y)=log(TSB(y));
+  }
+  // Recruits
+  vector<Type> logRecAge2(nYears);
+  vector<Type> logRecAge6(nYears);
+  for(int y=0; y<nYears; ++y){
+    logRecAge2(y)=logN(y,0);
+    logRecAge6(y)=logN(y,4);
+  }
+  
+  // Total FY (Demersal + Pelagic)
+  vector<Type> FY(nYears);
+  vector<Type> logFY(nYears);
+  FY.setZero();
+  for(int y=0; y<nYears; ++y){
+    FY(y)=DemFY(y)+PelFY(y);
+    logFY(y)=log(FY(y));
+  }
+  
+  
   // *** addtional outputs
   vector<Type> NY1(nAges); // age distribution in the first year
   NY1=exp(logNY1);
@@ -686,12 +715,14 @@ Type objective_function<Type>::operator() ()
   // *** reporting
   ADREPORT(logSSB);              // report logSSB into sdreport
   //ADREPORT(SSB);              // report SSB into sdreport
+  ADREPORT(logTSB);              // report logTSB into sdreport
   ADREPORT(PredTotalCatches); // report total catches in tonnes
   //ADREPORT(logNY1);
   //ADREPORT(NY1);
   ADREPORT(logNA1);
   //ADREPORT(NA1);
-  ADREPORT(RecAge6);
+  ADREPORT(logRecAge2);
+  ADREPORT(logRecAge6);
   //ADREPORT(PelFY);
   //ADREPORT(DemFY);
   //ADREPORT(PelFA);
@@ -716,6 +747,7 @@ Type objective_function<Type>::operator() ()
   ADREPORT(SA);
   ADREPORT(SAProp);
   ADREPORT(logSA);
+  ADREPORT(logFY);
   ADREPORT(M2);
   ADREPORT(nll1);
   ADREPORT(nll2);

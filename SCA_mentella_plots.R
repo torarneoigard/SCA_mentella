@@ -7,8 +7,7 @@
 # the file SCA_mentella_data.R is preparing the data
 # the file SCA_mentella_plots.R is plotting the results
 #
-# The version in the directory "~/Documents/Work/Redfish/ICES/AFWG2015/Mentella/SCAA_mentella_tmb" reproduce the SCA outputs from the AFWG2014
-# Benjamin Planque, February 2016, September 2017
+# Benjamin Planque, February 2016, September 2017, January 2018, April 2018
 
 # data preparation --------------------------------------------------------
 load('SCA_mentella_model.Rdata')            # Load model results from TMB
@@ -40,12 +39,14 @@ indSA <- which(rep.rnames=="SA")            # extract line numbers for survey se
 indlogSA <- which(rep.rnames=="logSA")      # extract line numbers for survey log-selectivities at age (SA's)
 indSAProp <- which(rep.rnames=="SAProp")    # extract line numbers for proportion-survey selectivities at age (SA's)
 indlogSSB <- which(rep.rnames=="logSSB")    # extract line numbers for SSB
+indlogTSB <- which(rep.rnames=="logTSB")    # extract line numbers for SSB
+indlogRecAge2 <- which(rep.rnames=="logRecAge2")
+indlogRecAge6 <- which(rep.rnames=="logRecAge6")
+indlogFY <- which(rep.rnames=="logFY")    # extract line numbers for numbers in year one
 indlogTriN <- which(rep.rnames=="logTriN")  # extract line numbers for triangular population matrix
 indIndexPropTruncMa <- which(rep.rnames=="IndexPropTruncMa")
-indnll1 <- which(rep.rnames=="nll1")  # extract line number for the nll component catch at age
-indnll2 <- which(rep.rnames=="nll2")  # extract line number for the nll component survey indices
-indnll3 <- which(rep.rnames=="nll3")  # extract line number for the nll component total catches in tonnes
-indnll4 <- which(rep.rnames=="nll4")  # extract line number for the nll component survey indices in proportions
+indnlls <- which(startsWith(rep.rnames,"nll")) # extract line numbers for all nll components
+
 
 # output vectors for plotting
 logNY1 <- rep.matrix[indlogNY1,1]
@@ -71,9 +72,19 @@ SA <- matrix(rep.matrix[indSA,1],nrow = length(surveys),byrow = FALSE)
 logSA <- matrix(rep.matrix[indlogSA,1],nrow = length(surveys),byrow = FALSE)
 logSA.sd <- matrix(rep.matrix[indlogSA,2],nrow = length(surveys),byrow = FALSE)
 SAProp <- matrix(rep.matrix[indSAProp,1],nrow = length(surveysProp),byrow = FALSE)
+SAProp.sd <- matrix(rep.matrix[indSAProp,2],nrow = length(surveysProp),byrow = FALSE)
 
 logSSB <- rep.matrix[indlogSSB,1]
 logSSB.sd <- rep.matrix[indlogSSB,2]
+logTSB <- rep.matrix[indlogTSB,1]
+logTSB.sd <- rep.matrix[indlogTSB,2]
+logRecAge2 <- rep.matrix[indlogRecAge2,1]
+logRecAge2.sd <- rep.matrix[indlogRecAge2,2]
+logRecAge6 <- rep.matrix[indlogRecAge6,1]
+logRecAge6.sd <- rep.matrix[indlogRecAge6,2]
+
+logFY <- rep.matrix[indlogFY,1]
+logFY.sd <- rep.matrix[indlogFY,2]
 
 logQSurvey <- array(NA,length(surveys))
 logQSurveytemp = rep.matrix[rep.rnames=="logQSurvey",1]
@@ -94,14 +105,19 @@ logTriNmatrix <-  (matrix(logTriN,nrow = (data$nYears+1),byrow = FALSE))
 logTriNmatrix.std <- (matrix(logTriN.std,nrow = (data$nYears+1),byrow = FALSE))
 
 # likelihood components
-nll1 <- rep.matrix[indnll1,1]
-nll2 <- rep.matrix[indnll2,1]
-nll3 <- rep.matrix[indnll3,1]
-nll4 <- rep.matrix[indnll4,1]
+nlls <- rep.matrix[indnlls,]
+print(nlls)
 
-#########
-# PLOTS #
-#########
+# output parameter estimates with std.error
+parnames <- unique(names(model$opt$par))
+indpar={}
+for (i in 1:length(parnames)){
+  indpar <- c(indpar,which(rep.rnames==parnames[i])) # extract line numbers for all nll components
+}
+Estimated.parameters <- rep.matrix[indpar,]
+write.table(Estimated.parameters,file=paste('estimated_parameters_',model$date.flag,'.txt',sep=""),row.names = TRUE)
+
+# Create PDF #####
 pdf.filename=paste('SCA_mentella_plots',model$date.flag,'.pdf',sep="")
 pdf(pdf.filename)
 
@@ -153,6 +169,15 @@ print(ggplot(data=SSB,aes(x=Year,y=SSB))+
   labs(x='Year',y='Biomass (tonnes)',title='Spawning Stock Biomass'))
 
 
+# Export population table -------------------------------------------------
+# Population matrix table (numbers@age) with 19+group
+N=exp(logTriNmatrix[-dim(logTriNmatrix)[1],]) # numbers-at-age (until last year of data)
+N2=as.data.frame(N[,1:(data$maxAge-data$minAge)]) # table withouth the +group
+N2=cbind(N2,rowSums(N[,((data$maxAge-data$minAge)+1):dim(N)[2]])) # +group column
+rownames(N2)=data$minYear:data$maxYear
+colnames(N2)=data$minAge:data$maxAge
+write.table(N2,file='Numbers-at-age.txt') # export table
+
 # Fishing mortalities -----------------------------------------------------
 FY=data.frame(Year=data$minYear:data$maxYear,
                DemFY=exp(logDemFY),
@@ -162,6 +187,7 @@ FY=data.frame(Year=data$minYear:data$maxYear,
                PelFY05=exp(logPelFY-2*logPelFY.sd),
                PelFY95=exp(logPelFY+2*logPelFY.sd))
 
+write.table(FY,file='Fy.txt',row.names = FALSE)
 
 #quartz("",7,5)
 print(ggplot(data=FY,aes(x=Year))+
@@ -183,6 +209,7 @@ FA=data.frame(Age=data$minAge:data$maxAge,
               PelFA05=exp(logitPelFA-2*logitPelFA.sd)/(1+exp(logitPelFA-2*logitPelFA.sd)),
               PelFA95=exp(logitPelFA+2*logitPelFA.sd)/(1+exp(logitPelFA+2*logitPelFA.sd))
               )
+write.table(FA,file='Fa.txt',row.names = FALSE)
 
 #quartz("",7,5)
 print(ggplot(data=FA,aes(x=Age))+
@@ -194,7 +221,7 @@ print(ggplot(data=FA,aes(x=Age))+
         lims(y=c(0,1)))
 }
 
-# with Random effects
+# with Random effects (revised April 2018)
 if (REDemFishSel==1){
   FARE=data.frame(year=rep(YearSpan,18),
                 age=rep(2:19,each=data$nYears),
@@ -204,16 +231,34 @@ if (REDemFishSel==1){
                 PelFA=rep(exp(logitPelFA)/(1+exp(logitPelFA)),each=data$nYears),
                 PelFA05=rep(exp(logitPelFA-2*logitPelFA.sd)/(1+exp(logitPelFA-2*logitPelFA.sd)),each=data$nYears),
                 PelFA95=rep(exp(logitPelFA+2*logitPelFA.sd)/(1+exp(logitPelFA+2*logitPelFA.sd)),each=data$nYears))
-print(ggplot(data=FARE,aes(x=age))+
-  facet_wrap(~year)+
-  geom_line(aes(y=DemFARE))+
-  geom_ribbon(aes(y = DemFARE,ymin = DemFARE05, ymax = DemFARE95),fill='lightblue',alpha=0.5)+
-  geom_line(aes(y=PelFA))+
-  geom_ribbon(aes(y = PelFA,ymin = PelFA05, ymax = PelFA95),fill='lightpink',alpha=0.5)+
-  labs(x='Age (year)',y='Fleet selectivity (Sa)',title='Fleet selectivities-at-age')+
-  lims(y=c(0,1))
-)
+  write.table(FARE,file='Fa.txt',row.names = FALSE)
+
+  FARE0=data.frame(age=2:19,
+                   PelFA=exp(logitPelFA)/(1+exp(logitPelFA)),
+                   PelFA05=exp(logitPelFA-2*logitPelFA.sd)/(1+exp(logitPelFA-2*logitPelFA.sd)),
+                   PelFA95=exp(logitPelFA+2*logitPelFA.sd)/(1+exp(logitPelFA+2*logitPelFA.sd)))
+  FARE1=data.frame(year=rep(YearSpan,18),
+                  age=rep(2:19,each=data$nYears),
+                  DemFARE=exp(logitDemFARE)/(1+exp(logitDemFARE)),
+                  DemFARE05=exp(logitDemFARE-2*logitDemFARE.sd)/(1+exp(logitDemFARE-2*logitDemFARE.sd)),
+                  DemFARE95=exp(logitDemFARE+2*logitDemFARE.sd)/(1+exp(logitDemFARE+2*logitDemFARE.sd)))
+  
+  print(ggplot(data=FARE0,aes(x=age))+
+          geom_line(aes(y=PelFA))+
+          geom_ribbon(aes(y = PelFA,ymin = PelFA05, ymax = PelFA95),fill='lightblue',alpha=0.5)+
+          labs(x='Age (year)',y='Pelagic Fleet selectivity (Sa)',title='Fleet selectivities-at-age')+
+          lims(y=c(0,1)))
+  
+  print(ggplot(data=FARE1,aes(x=age))+
+          facet_wrap(~year)+
+          geom_line(aes(y=DemFARE))+
+          geom_hline(yintercept=0.5,colour='red',linetype=3)+
+          geom_vline(xintercept=10,colour='red',linetype=3)+
+          geom_ribbon(aes(y = DemFARE,ymin = DemFARE05, ymax = DemFARE95),fill='lightblue',alpha=0.5)+
+          labs(x='Age (year)',y='Demersal Fleet selectivity (Sa)',title='Fleet selectivities-at-age')+
+          lims(y=c(0,1)))
 }
+
 
 # Survey selectivities ----------------------------------------------------
 # with confidence intervals
@@ -233,16 +278,27 @@ names(SAdf) <- SAdf.names
 SAdf <- as.data.frame(SAdf)
 
 ggplot(data=SAdf,aes(x=Age))+
-  geom_ribbon(aes(ymin = SAWinter05, ymax = SAWinter95), fill = "lightblue",alpha=0.5)+
   geom_ribbon(aes(ymin = SAEcosystem05, ymax = SAEcosystem95), fill = "gray70",alpha=0.5)+
-  geom_ribbon(aes(ymin = SARussian05, ymax = SARussian95), fill = "lightpink",alpha=0.5)+
-  geom_line(aes(y=SAWinter),colour='blue')+
   geom_line(aes(y=SAEcosystem),colour='black')+
-  geom_line(aes(y=SARussian),colour='red')+
   labs(x='Age (year)',y='Survey selectivity (Sa)',title='Survey selectivities-at-age')+
+    geom_ribbon(aes(ymin = SAWinter05, ymax = SAWinter95), fill = "lightblue",alpha=0.5)+
+    geom_line(aes(y=SAWinter),colour='blue')+
+    geom_ribbon(aes(ymin = SARussian05, ymax = SARussian95), fill = "lightpink",alpha=0.5)+
+    geom_line(aes(y=SARussian),colour='red')+
   lims(y=c(0,1.2))
-
-
+  
+# selectivity for survey in proportion ----------------------------------------------------
+# with confidence intervals
+SAP=data.frame(Age=data$minAge:data$maxAge,
+              SAProp=t(SAProp),
+              SAProp05=t(SAProp-1.96*SAProp.sd),
+              SAProp95=t(SAProp+1.96*SAProp.sd)
+              )
+print(ggplot(data=SAP,aes(x=Age))+
+        geom_line(aes(y=SAProp),colour='blue')+
+        geom_ribbon(aes(y = SAProp,ymin = SAProp05, ymax = SAProp95),fill='lightblue',alpha=0.5)+
+        labs(x='Age (year)',y='Selectivity',title='Survey in proportion, selectivity-at-age')+
+        lims(y=c(0,1)))
 
 ## CATCHES
 
@@ -502,15 +558,11 @@ print(ggplot()+
   scale_size_area(name='Proportion (%)')+
   labs(x='Age (year)',y='Year',title='Modelled vs. Observed proportions-at-age'))
 }
-
-# ADDITIONAL PLOTS AND TABLES############################
-# 
-#############################
-
-# STOCK SUMMARY PLOT AND TABLE
+ 
+# Stock Summary Plot and Table ####
 
 # POP MATRIX
-N=exp(logTriNmatrix[-dim(logTriNmatrix)[1],]) # numbers-at-age (until last year of data)
+#N=exp(logTriNmatrix[-dim(logTriNmatrix)[1],]) # numbers-at-age (until last year of data)
 N[N==1]=0 # replace ones by zeros (log<->exp transformation issue)
 
 # WEIGHT MATRIX
@@ -524,23 +576,23 @@ Mat[,1:(data$maxAge-data$minAge+1)]=data$MaturityAtAge
 Mat[,(data$maxAge-data$minAge+2):dim(Mat)[2]]=data$MaturityAtAge[,(data$maxAge-data$minAge+1)]%*%t(rep(1,dim(Mat)[2]-(data$maxAge-data$minAge+1)))
 
 # Biomass
-TSB=rowSums(N*W)/1000 # Total Stock Biomass in tonnes
-SSB=rowSums(N*W*Mat)/1000 # Spawning Stock Biomass in tonnes
+TSB=exp(logTSB) # Total Stock Biomass in tonnes
+TSB.025=exp(logTSB-1.96*logTSB.sd)
+TSB.975=exp(logTSB+1.96*logTSB.sd)
+SSB=exp(logSSB) # Spawning Stock Biomass in tonnes
+SSB.025=exp(logSSB-1.96*logSSB.sd)
+SSB.975=exp(logSSB+1.96*logSSB.sd)
 
 # Recruits
-Rec2=exp(logTriNmatrix[1:length(YearSpan),(2-data$minAge+1)])/1e6 # in millions
-Rec6=exp(logTriNmatrix[1:length(YearSpan),(6-data$minAge+1)])/1e6 # in millions
+Rec2=exp(logRecAge2)/1e6 # in millions
+Rec6=exp(logRecAge6)/1e6 # in millions
+Rec6.025=exp(logRecAge6-1.96*logRecAge6.sd)/1e6# in millions
+Rec6.975=exp(logRecAge6+1.96*logRecAge6.sd)/1e6# in millions
 
-# Fishing mortality
-# DemFY=exp(logDemFY)
-# if (REDemFishSel==0){
-#   DemFA=exp(logitDemFAfe)/(1+exp(logitDemFAfe))
-# }
-# PelFY=exp(logPelFY)
-# PelFA=exp(logitPelFA)/(1+exp(logitPelFA))
-Ftot=TotF
-F12.18=rowMeans(Ftot[,((12:18)-data$minAge+1)])
-F19=Ftot[,(19-data$minAge+1)]
+# Fishing Mortality
+F19=exp(logFY)
+F19.025=exp(logFY-1.97*logFY.sd)
+F19.975=exp(logFY+1.97*logFY.sd)
 
 # Stock Summary Table
 SS=data.frame(Year=YearSpan,
@@ -548,25 +600,27 @@ SS=data.frame(Year=YearSpan,
               Recruits.at.age.6=round(Rec6),
               Total.Stock.Biomass=round(TSB),
               Spawning.Stock.Biomass=round(SSB),
-              F12.18=round(F12.18,3),
               F19=round(F19,3))
 write.table(SS,'SCA_mentella_stock_summary.txt',row.names = FALSE,quote = FALSE,sep='\t')
 
 # Stock Summary table extended
 SSE=data.frame(Year=YearSpan,
-              Rec.age.2=round(exp(logNA1)),
-              Rec.age.2.025=round(exp(logNA1-logNA1.sd*1.96)),
-              Rec.age.2.975=round(exp(logNA1+logNA1.sd*1.96)),
-              SSB=round(exp(logSSB)),
-              SSB.025=round(exp(logSSB-logSSB.sd*1.96)),
-              SSB.975=round(exp(logSSB+logSSB.sd*1.96)),
-              TSB=round(TSB),
+              Rec.age.6.025=Rec6.025,                    # in millions
+              Rec.age.6=Rec6,
+              Rec.age.6.975=Rec6.975,
+              SSB.025=round(SSB.025), # in tonnes
+              SSB=round(SSB),
+              SSB.975=round(SSB.975),
+              TSB.025=round(TSB.025), # in tonnes
+              TSB=round(TSB),                            # in tonnes
+              TSB.975=round(TSB.975),
               Catches.in.Tonnes=round(data$TotalCatches[,2]),
               Catches.Pelagic=round(data$TotalCatches[,3]),
               Catches.Other=round(data$TotalCatches[,4]),
-              F12.18=round(F12.18,3),
-              F19=round(F19,3))
-write.table(SSE,'SCA_mentella_stock_summary4graphs.txt',row.names = FALSE,quote = FALSE,sep='\t')
+              F19.025=round(F19.025,3),
+              F19=round(F19,3),
+              F19.975=round(F19.975,3))
+write.table(SSE,'SCA_mentella_stock_summary4ICESgraphs.txt',row.names = FALSE,quote = FALSE,sep='\t')
 
 plot.new()
 ggplot_overlay=function(p1,p2){
@@ -612,9 +666,8 @@ p2=ggplot(data=SS, aes(x=Year, y=Recruits.at.age.2))+
 print(ggplot_overlay(p1,p2))
 dev.off()
 
-#######
-# plot age-structure in last year of the assessment
-#######
+# plot age-structure in last year of the assessment #######
+
 LastYear=data.frame(Age=model$data$minAge+(1:dim(N)[2])-1,
                     N=N[dim(N)[1],],
                     TSB=N[dim(N)[1],]*W[dim(N)[1],]/1e6,
@@ -642,4 +695,16 @@ pdf.filename2=paste('SCA_mentella_plots',model$date.flag,'2.pdf',sep="")
 pdf(pdf.filename2)
 print(ggplot_overlay(p1,p2))
 dev.off()
+
+# Bonus plot: S-R relationship
+g=ggplot()+
+  geom_path(aes(y=Rec2[3:25], x=SSB[1:23]), col='blue', linetype=2)+
+  geom_point(aes(y=Rec2[3:25], x=SSB[1:23]), col='blue',size=3)+
+  xlab('Spawning Stock Biomass (tonnes)')+
+  ylab('Recruitment (numbers at age 2 in millions)')+
+  xlim(0,max(SSB[1:23])*1.05)
+print(g)
+
+
+
 

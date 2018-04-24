@@ -15,11 +15,11 @@ require(gamlss)                             # load the gamlss library
 require(grid)
 
 ## CLEAR ALL
-cat("\014")                                 # cear console
+cat("\014")                                 # clear console
 rm(list=ls())                               # clear workspace
 graphics.off()                              # clear graphical windows
 
-YearSpan=1992:2016                          # set the range of year over which the model is run
+YearSpan=1992:2017                          # set the range of year over which the model is run
 
 ## OPTIONS
 RElogNA=1                                   # Recruits (NA1): 0=fixed effect, 1=random effect
@@ -62,6 +62,12 @@ source('./SCA_mentella_model.R')
 source('./SCA_mentella_plots.R',print.eval = TRUE)
 
 #####################
+## MCMC            ##
+#####################
+#source('./SCA_mentella_MCMC.R',print.eval = TRUE)
+
+#####################
 ## PROJECTION TABLE##
 #####################
-#source('./SCA_mentella_projections.R',print.eval = TRUE)
+source('./SCA_mentella_projections.R',print.eval = TRUE)
+

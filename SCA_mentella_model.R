@@ -22,16 +22,16 @@ parameters <- list(
   DemlogFYinit = -4,
   DemlogFYIntercept = 0,
   logSigmaDemlogFY = 0,
-  paDemlogFY = 1,
+  paDemlogFY = 0,
   PellogFY=c(rep(-1e6,14),rep(-4,data$nYears-14)),  # partial log-Mortality by year for the Pelagic Fleet (separable mortality)
   PellogFYinit = -4,
   PellogFYIntercept = 0,
   logSigmaPellogFY = 0,
-  paPellogFY = 1,
+  paPellogFY = 0,
   pDema50=0,                      # Demersal fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
   pDema50Init = 0,
   #pDema50Intercept = 0,
-  papDema50=0.5,
+  papDema50=0,
   logSigmaDema50=0,
   Demlogw=1,        		          # Demersal fleet selectivity coefficient 2
   DemlogwInit = 1,
@@ -52,10 +52,12 @@ parameters <- list(
   Pelsplus=10,                    # Pelagic fleet selectivity coefficient 3 (selectivity for +group), to be switched off
   Propplus=10,
   logM2=-3,					              # log of Natural mortality (should be switched off)
-  pa0 = data$pa0Init,             # Survey selectivity coefficients a (probit-transformed age at which the derivative of the survey selectivity function is flat)
+  pa0 = data$pa0Init,             # Survey selectivity coefficients a (logit-transformed age at which the derivative of the survey selectivity function is flat)
+  #pa0=c(-0.421,-0.237,data$pa0Init[3]),  # test 18 Apr 2018, replaces line above
   logb1 = data$logb1Init,         # Survey selectivity coefficients b1 (log-transformed upward slope of the selectivity function, for age<pa)
   logb2 = data$logb2Init,         # Survey selectivity coefficients b2 (log-ransformed downward slope of the selectivity function, for age>pa)
-  palogNA1 = 1,                   # Probit-transformed coffecient a of the autoregressive recruitment model (random effects)
+  #logb2 = c(-1.659,-0.766,data$logb2Init[3]), # test 18 Apr 2018, replaces line above
+  palogNA1 = 3,                  # logit-transformed coefficient a of the autoregressive recruitment model (random effects)
   logSigmalogNA1=0,               # log-transformed standard deviation of log-recruitment in the autoregressive recruitment model (random effects)
   ulogNA1=rep(0,(data$nYears-1)),  # random effects proper
   uDemlogFY=rep(0,(data$nYears-1)),
@@ -73,6 +75,11 @@ ind <- which(NoPellFy %in% YearSpan)
 map = list()
 random = NULL
 
+map$logM2=factor(NA)                         # Natural mortality is fixed
+#map$logM2=factor(1)                         # Natural mortality is estimated
+#map$pa0=factor(c(NA,NA,1))                  # test 18 Apr 2018
+#data$logb2Map=factor(c(NA,NA,1))            # test 18 Apr 2018
+
 #TRUE if logNA is fixed effect
 if(data$RElogNA == 0){
   map$PellogFY=factor(c(rep(NA,length(ind)),1:(length(YearSpan)-length(ind))))       # Fy for pelagic fleet is not estimated for the first 14y (1992-2005)
@@ -82,7 +89,6 @@ if(data$RElogNA == 0){
   map$Propplus=factor(NA)
   map$logb1 = data$logb1Map
   map$logb2 = data$logb2Map
-  map$logM2=factor(NA)                         # Natural mortality is fixed
   map$palogNA1 = factor(NA)                    # parameters for random effect are not estimated 
   map$logSigmalogNA1=factor(NA)                # parameters for random effect are not estimated 
   map$ulogNA1=factor(rep(NA,(data$nYears-1)))  # parameters for random effect are not estimated 
@@ -96,12 +102,12 @@ if(data$RElogNA == 0){
   map$Propplus=factor(NA)
   map$logb1 = data$logb1Map
   map$logb2 = data$logb2Map
-  map$logM2=factor(NA)                        # Natural mortality is fixed
   map$logNA1fe=factor(rep(NA,(data$nYears-1)))
   random=c("ulogNA1")
+  #map$palogNA1=factor(NA)                      # ADDED 9 Feb 2018 - TEST
 }
 
-#TRUE if Demershal fleet fishing mortality is fixed effect
+#TRUE if Demersal fleet fishing mortality is fixed effect
 if(REDemFishMort == 0){
   map$DemlogFYinit = factor(NA)
   map$DemlogFYIntercept = factor(NA)
@@ -111,6 +117,7 @@ if(REDemFishMort == 0){
 } else {
   map$DemlogFY=factor(rep(NA,data$nYears))
   random = append(random,"uDemlogFY")
+  #map$paDemlogFY=factor(NA)                    # ADDED 9 Feb 2018 - TEST
 }
 
 #TRUE if Pelagic fleet fishing mortality is fixed effect
@@ -124,6 +131,7 @@ if(REPelFishMort == 0){
 } else {
   map$PellogFY=factor(c(rep(NA,14),rep(NA,data$nYears-14)))
   random = append(random,"uPellogFY")
+  #map$paPellogFY=factor(NA)                    # ADDED 9 Feb 2018 - TEST
 }
 
 # Demersal fleet fish selectivity
@@ -140,6 +148,7 @@ if(REDemFishSel==0){
 } else {
   map$pDema50=factor(NA)      # Demersal fleet selectivity coefficient 1 (this should be bounded between 6 and maxAge)
   map$Demlogw=factor(NA)      # Demersal fleet selectivity coefficient 2
+  #map$papDema50=factor(NA)                      # ADDED 9 Feb 2018 - TEST
   random = append(random,c("uDemlogw","uDema50"))
 }
 
@@ -168,3 +177,6 @@ cpp.code <- scan('SCA_mentella_model.cpp',what="",sep="\n")  # reads the current
 date.flag=date()
 model=list(date.flag=date.flag,data=data,parameters=parameters,R.code=R.code,cpp.code=cpp.code,obj=obj,opt=opt,rep=report)
 save(model,file='SCA_mentella_model.Rdata')
+save(model,file=paste('SCA_mentella_model',model$date.flag,'.Rdata',sep="")) # save a copy with the date flag
+     
+
